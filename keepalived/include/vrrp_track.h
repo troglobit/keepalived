@@ -53,6 +53,7 @@
 
 /* external script we call to track local processes */
 typedef struct _vrrp_script {
+	unsigned int index;	/* index */
 	char *sname;		/* instance name */
 	char *script;		/* the command to be called */
 	int interval;		/* interval between script calls */

@@ -40,6 +40,9 @@
 #ifdef _WITH_LVS_
   #include "ipvswrapper.h"
 #endif
+#ifdef _WITH_SNMP_
+  #include "vrrp_snmp.h"
+#endif
 #include "list.h"
 #include "main.h"
 #include "memory.h"
@@ -63,6 +66,9 @@ stop_vrrp(void)
 		shutdown_vrrp_instances();
 	free_interface_queue();
 	gratuitous_arp_close();
+#ifdef _WITH_SNMP_
+	vrrp_snmp_agent_close();
+#endif
 
 	/* Stop daemon */
 	pidfile_rm(vrrp_pidfile);
@@ -97,6 +103,10 @@ start_vrrp(void)
 	init_interface_queue();
 	kernel_netlink_init();
 	gratuitous_arp_init();
+#ifdef _WITH_SNMP_
+	if (!reload)
+		vrrp_snmp_agent_init();
+#endif
 
 #ifdef _WITH_LVS_
 	/* Initialize ipvs related */

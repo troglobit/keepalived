@@ -1,0 +1,47 @@
+-- ----------------------------------------------------------------------
+-- MIB file for keepalived (http://www.keepalived.org)
+-- ----------------------------------------------------------------------
+--
+-- There are two sections in this MIB: vrrp and check.
+
+KEEPALIVED-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    OBJECT-TYPE, MODULE-IDENTITY,
+    Integer32, Unsigned32, enterprises
+        FROM SNMPv2-SMI
+    OBJECT-GROUP, MODULE-COMPLIANCE
+    	FROM SNMPv2-CONF
+    DisplayString
+        FROM SNMPv2-TC;
+
+keepalived MODULE-IDENTITY
+     LAST-UPDATED "200904080000Z"
+     ORGANIZATION "Keepalived"
+     CONTACT-INFO "http://www.keepalived.org"
+     DESCRIPTION
+        "This MIB describes objects used by keepalived, both
+         for VRRP and health checker."
+
+     REVISION "200904080000Z"
+     DESCRIPTION "Initial revision"
+
+     ::= { enterprises 60000 }
+
+vrrp                    OBJECT IDENTIFIER ::= { keepalived 1 }
+check                   OBJECT IDENTIFIER ::= { keepalived 2 }
+conformance		OBJECT IDENTIFIER ::= { keepalived 3 }
+
+-- ----------------------------------------------------------------------
+-- VRRP part
+-- ----------------------------------------------------------------------
+
+vrrpKeepalivedVersion OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Version of keepalived"
+    ::= { vrrp 1 }
+
+END

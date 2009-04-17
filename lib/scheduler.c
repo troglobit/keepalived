@@ -24,6 +24,12 @@
  * Copyright (C) 2001-2009 Alexandre Cassen, <acassen@freebox.fr>
  */
 
+/* SNMP should be included first: it redefines "FREE" */
+#ifdef _WITH_SNMP_
+#include <net-snmp/net-snmp-config.h>
+#include <net-snmp/net-snmp-includes.h>
+#endif
+
 #include <signal.h>
 #include <sys/wait.h>
 #include <sys/select.h>
@@ -502,6 +508,10 @@ thread_fetch(thread_master * m, thread * fetch)
 	fd_set exceptfd;
 	TIMEVAL timer_wait;
 	int signal_fd;
+#ifdef _WITH_SNMP_
+	int fakeblock = 0;
+	int fdsetsize;
+#endif
 
 	assert(m != NULL);
 
@@ -548,10 +558,23 @@ retry:	/* When thread can't fetch try to find next thread again. */
 	signal_fd = signal_rfd();
 	FD_SET(signal_fd, &readfd);
 
+	/* NetSNMP snmp_select_info will add its own fd to readfd */
+#ifdef _WITH_SNMP_
+	fdsetsize = FD_SETSIZE;
+	snmp_select_info(&fdsetsize, &readfd, &timer_wait, &fakeblock);
+#endif
 	ret = select(FD_SETSIZE, &readfd, &writefd, &exceptfd, &timer_wait);
 
 	/* we have to save errno here because the next syscalls will set it */
 	old_errno = errno;
+
+	/* Handle SNMP stuff */
+#ifdef _WITH_SNMP_
+	if (ret > 0)
+		snmp_read(&readfd);
+	else if (ret == 0)
+		snmp_timeout();
+#endif
 
 	/* handle signals synchronously, including child reaping */
 	if (FD_ISSET(signal_fd, &readfd))
