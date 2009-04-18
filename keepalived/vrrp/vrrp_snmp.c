@@ -45,7 +45,7 @@ vrrp_snmp_scalar(struct variable *vp, oid *name, size_t *length,
 
 	switch (vp->magic) {
 	case VRRP_SNMP_KEEPALIVEDVERSION:
-		*var_len = strlen(VERSION_STRING);
+		*var_len = strlen(VERSION_STRING) - 1;
 		return (u_char *)VERSION_STRING;
 	default:
 		break;
