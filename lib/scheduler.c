@@ -28,6 +28,8 @@
 #ifdef _WITH_SNMP_
 #include <net-snmp/net-snmp-config.h>
 #include <net-snmp/net-snmp-includes.h>
+#include <net-snmp/agent/net-snmp-agent-includes.h>
+#include <net-snmp/agent/snmp_vars.h>
 #endif
 
 #include <signal.h>
@@ -681,6 +683,11 @@ retry:	/* When thread can't fetch try to find next thread again. */
 	*fetch = *thread_obj;
 	thread_obj->type = THREAD_UNUSED;
 	thread_add_unuse(m, thread_obj);
+
+#ifdef _WITH_SNMP_
+	run_alarms();
+	netsnmp_check_outstanding_agent_requests();
+#endif
 
 	return fetch;
 }
