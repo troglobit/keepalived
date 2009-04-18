@@ -26,6 +26,7 @@
 #include "vrrp_data.h"
 #include "vrrp_track.h"
 #include "vrrp_ipaddress.h"
+#include "vrrp_iproute.h"
 #include "config.h"
 #include "list.h"
 
@@ -47,6 +48,34 @@
 #define VRRP_SNMP_STATICADDRESS_IFNAME 15
 #define VRRP_SNMP_STATICADDRESS_IFALIAS 16
 #define VRRP_SNMP_STATICADDRESS_ISSET 17
+#define VRRP_SNMP_STATICROUTE_INDEX 18
+#define VRRP_SNMP_STATICROUTE_ADDRESSTYPE 19
+#define VRRP_SNMP_STATICROUTE_DESTINATION 20
+#define VRRP_SNMP_STATICROUTE_DESTINATIONMASK 21
+#define VRRP_SNMP_STATICROUTE_GATEWAY 22
+#define VRRP_SNMP_STATICROUTE_SECONDARYGATEWAY 23
+#define VRRP_SNMP_STATICROUTE_SOURCE 24
+#define VRRP_SNMP_STATICROUTE_METRIC 25
+#define VRRP_SNMP_STATICROUTE_SCOPE 26
+#define VRRP_SNMP_STATICROUTE_BLACKHOLE 27
+#define VRRP_SNMP_STATICROUTE_IFINDEX 28
+#define VRRP_SNMP_STATICROUTE_IFNAME 29
+#define VRRP_SNMP_STATICROUTE_ROUTINGTABLE 30
+#define VRRP_SNMP_STATICROUTE_ISSET 31
+
+static unsigned long
+snmp_scope(int scope)
+{
+	switch (scope) {
+	case 0: return 14;  /* global */
+	case 255: return 0; /* nowhere */
+	case 254: return 1; /* host */
+	case 253: return 2; /* link */
+	case 200: return 5; /* site */
+	default: return 0;
+	}
+	return 0;
+}
 
 static u_char*
 vrrp_snmp_scalar(struct variable *vp, oid *name, size_t *length,
@@ -168,14 +197,7 @@ vrrp_snmp_staticaddress(struct variable *vp, oid *name, size_t *length,
 		long_ret = addr->mask;
 		return (u_char *)&long_ret;
 	case VRRP_SNMP_STATICADDRESS_SCOPE:
-		switch (addr->scope) {
-		case 0: long_ret = 14; break;  /* global */
-		case 255: long_ret = 0; break; /* nowhere */
-		case 254: long_ret = 1; break; /* host */
-		case 253: long_ret = 2; break; /* link */
-		case 200: long_ret = 5; break; /* site */
-		default: long_ret = 0; break;
-		}
+		long_ret = snmp_scope(addr->scope);
 		return (u_char *)&long_ret;
 	case VRRP_SNMP_STATICADDRESS_IFINDEX:
 		long_ret = addr->ifindex;
@@ -192,6 +214,71 @@ vrrp_snmp_staticaddress(struct variable *vp, oid *name, size_t *length,
 		return (u_char*)"";
 	case VRRP_SNMP_STATICADDRESS_ISSET:
 		long_ret = (addr->set == TRUE)?1:2;
+		return (u_char *)&long_ret;
+	default:
+		break;
+        }
+        return NULL;
+}
+
+static u_char*
+vrrp_snmp_staticroute(struct variable *vp, oid *name, size_t *length,
+		 int exact, size_t *var_len, WriteMethod **write_method)
+{
+        static unsigned long long_ret;
+	ip_route *route;
+
+	if ((route = (ip_route *)header_list_table(vp, name, length, exact,
+						   var_len, write_method,
+						   vrrp_data->static_routes)) == NULL)
+		return NULL;
+
+	switch (vp->magic) {
+	case VRRP_SNMP_STATICROUTE_INDEX:
+                long_ret = name[*length - 1];
+		return (u_char *)&long_ret;
+	case VRRP_SNMP_STATICROUTE_ADDRESSTYPE:
+		long_ret = 1;	/* IPv4 only */
+		return (u_char *)&long_ret;
+	case VRRP_SNMP_STATICROUTE_DESTINATION:
+		*var_len = 4;
+		return (u_char *)&route->dst;
+	case VRRP_SNMP_STATICROUTE_DESTINATIONMASK:
+		long_ret = route->dmask;
+		return (u_char *)&long_ret;
+	case VRRP_SNMP_STATICROUTE_GATEWAY:
+		*var_len = 4;
+		return (u_char *)&route->gw;
+	case VRRP_SNMP_STATICROUTE_SECONDARYGATEWAY:
+		*var_len = 4;
+		return (u_char *)&route->gw2;
+	case VRRP_SNMP_STATICROUTE_SOURCE:
+		*var_len = 4;
+		return (u_char *)&route->src;
+	case VRRP_SNMP_STATICROUTE_METRIC:
+		long_ret = route->metric;
+		return (u_char *)&long_ret;
+	case VRRP_SNMP_STATICROUTE_SCOPE:
+		long_ret = snmp_scope(route->scope);
+		return (u_char *)&long_ret;
+	case VRRP_SNMP_STATICROUTE_BLACKHOLE:
+		long_ret = (route->blackhole)?1:2;
+		return (u_char *)&long_ret;
+	case VRRP_SNMP_STATICROUTE_IFINDEX:
+		long_ret = route->index;
+		return (u_char *)&long_ret;
+	case VRRP_SNMP_STATICROUTE_IFNAME:
+		if (route->index) {
+			*var_len = strlen(IF_NAME(if_get_by_ifindex(route->index)));
+			return (u_char *)&IF_NAME(if_get_by_ifindex(route->index));
+		}
+		*var_len = 0;
+		return (u_char *)"";
+	case VRRP_SNMP_STATICROUTE_ROUTINGTABLE:
+		long_ret = route->table;
+		return (u_char *)&long_ret;
+	case VRRP_SNMP_STATICROUTE_ISSET:
+		long_ret = (route->set == TRUE)?1:2;
 		return (u_char *)&long_ret;
 	default:
 		break;
@@ -228,6 +315,33 @@ static struct variable8 vrrp_vars[] = {
 	 vrrp_snmp_staticaddress, 3, {3, 1, 9}},
 	{VRRP_SNMP_STATICADDRESS_ISSET, ASN_INTEGER, RONLY,
 	 vrrp_snmp_staticaddress, 3, {3, 1, 10}},
+	/* vrrpStaticRouteTable */
+	{VRRP_SNMP_STATICROUTE_ADDRESSTYPE, ASN_INTEGER, RONLY,
+	 vrrp_snmp_staticroute, 3, {4, 1, 2}},
+	{VRRP_SNMP_STATICROUTE_DESTINATION, ASN_OCTET_STR, RONLY,
+	 vrrp_snmp_staticroute, 3, {4, 1, 3}},
+	{VRRP_SNMP_STATICROUTE_DESTINATIONMASK, ASN_UNSIGNED, RONLY,
+	 vrrp_snmp_staticroute, 3, {4, 1, 4}},
+	{VRRP_SNMP_STATICROUTE_GATEWAY, ASN_OCTET_STR, RONLY,
+	 vrrp_snmp_staticroute, 3, {4, 1, 5}},
+	{VRRP_SNMP_STATICROUTE_SECONDARYGATEWAY, ASN_OCTET_STR, RONLY,
+	 vrrp_snmp_staticroute, 3, {4, 1, 6}},
+	{VRRP_SNMP_STATICROUTE_SOURCE, ASN_OCTET_STR, RONLY,
+	 vrrp_snmp_staticroute, 3, {4, 1, 7}},
+	{VRRP_SNMP_STATICROUTE_METRIC, ASN_UNSIGNED, RONLY,
+	 vrrp_snmp_staticroute, 3, {4, 1, 8}},
+	{VRRP_SNMP_STATICROUTE_SCOPE, ASN_INTEGER, RONLY,
+	 vrrp_snmp_staticroute, 3, {4, 1, 9}},
+	{VRRP_SNMP_STATICROUTE_BLACKHOLE, ASN_INTEGER, RONLY,
+	 vrrp_snmp_staticroute, 3, {4, 1, 10}},
+	{VRRP_SNMP_STATICROUTE_IFINDEX, ASN_INTEGER, RONLY,
+	 vrrp_snmp_staticroute, 3, {4, 1, 11}},
+	{VRRP_SNMP_STATICROUTE_IFNAME, ASN_OCTET_STR, RONLY,
+	 vrrp_snmp_staticroute, 3, {4, 1, 12}},
+	{VRRP_SNMP_STATICROUTE_ROUTINGTABLE, ASN_UNSIGNED, RONLY,
+	 vrrp_snmp_staticroute, 3, {4, 1, 13}},
+	{VRRP_SNMP_STATICROUTE_ISSET, ASN_INTEGER, RONLY,
+	 vrrp_snmp_staticroute, 3, {4, 1, 14}},
 };
 
 void
