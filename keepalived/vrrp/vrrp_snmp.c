@@ -25,6 +25,7 @@
 #include "vrrp_snmp.h"
 #include "vrrp_data.h"
 #include "vrrp_track.h"
+#include "vrrp_ipaddress.h"
 #include "config.h"
 #include "list.h"
 
@@ -36,6 +37,16 @@
 #define VRRP_SNMP_SCRIPT_INTERVAL 5
 #define VRRP_SNMP_SCRIPT_WEIGHT 6
 #define VRRP_SNMP_SCRIPT_RESULT 7
+#define VRRP_SNMP_STATICADDRESS_INDEX 8
+#define VRRP_SNMP_STATICADDRESS_ADDRESSTYPE 9
+#define VRRP_SNMP_STATICADDRESS_VALUE 10
+#define VRRP_SNMP_STATICADDRESS_BROADCAST 11
+#define VRRP_SNMP_STATICADDRESS_MASK 12
+#define VRRP_SNMP_STATICADDRESS_SCOPE 13
+#define VRRP_SNMP_STATICADDRESS_IFINDEX 14
+#define VRRP_SNMP_STATICADDRESS_IFNAME 15
+#define VRRP_SNMP_STATICADDRESS_IFALIAS 16
+#define VRRP_SNMP_STATICADDRESS_ISSET 17
 
 static u_char*
 vrrp_snmp_scalar(struct variable *vp, oid *name, size_t *length,
@@ -128,17 +139,95 @@ vrrp_snmp_script(struct variable *vp, oid *name, size_t *length,
         return NULL;
 }
 
+static u_char*
+vrrp_snmp_staticaddress(struct variable *vp, oid *name, size_t *length,
+		 int exact, size_t *var_len, WriteMethod **write_method)
+{
+        static unsigned long long_ret;
+	ip_address *addr;
+
+	if ((addr = (ip_address *)header_list_table(vp, name, length, exact,
+						    var_len, write_method,
+						    vrrp_data->static_addresses)) == NULL)
+		return NULL;
+
+	switch (vp->magic) {
+	case VRRP_SNMP_STATICADDRESS_INDEX:
+                long_ret = name[*length - 1];
+		return (u_char *)&long_ret;
+	case VRRP_SNMP_STATICADDRESS_ADDRESSTYPE:
+		long_ret = 1;	/* ipv4 only */
+		return (u_char *)&long_ret;		
+	case VRRP_SNMP_STATICADDRESS_VALUE:
+		*var_len = 4;
+		return (u_char *)&addr->addr;
+	case VRRP_SNMP_STATICADDRESS_BROADCAST:
+		*var_len = 4;
+		return (u_char *)&addr->broadcast;
+	case VRRP_SNMP_STATICADDRESS_MASK:
+		long_ret = addr->mask;
+		return (u_char *)&long_ret;
+	case VRRP_SNMP_STATICADDRESS_SCOPE:
+		switch (addr->scope) {
+		case 0: long_ret = 14; break;  /* global */
+		case 255: long_ret = 0; break; /* nowhere */
+		case 254: long_ret = 1; break; /* host */
+		case 253: long_ret = 2; break; /* link */
+		case 200: long_ret = 5; break; /* site */
+		default: long_ret = 0; break;
+		}
+		return (u_char *)&long_ret;
+	case VRRP_SNMP_STATICADDRESS_IFINDEX:
+		long_ret = addr->ifindex;
+		return (u_char *)&long_ret;
+	case VRRP_SNMP_STATICADDRESS_IFNAME:
+		*var_len = strlen(addr->ifp->ifname);
+		return (u_char *)addr->ifp->ifname;
+	case VRRP_SNMP_STATICADDRESS_IFALIAS:
+		if (addr->label) {
+			*var_len = strlen(addr->label);
+			return (u_char*)addr->label;
+		}
+		*var_len = 0;
+		return (u_char*)"";
+	case VRRP_SNMP_STATICADDRESS_ISSET:
+		long_ret = (addr->set == TRUE)?1:2;
+		return (u_char *)&long_ret;
+	default:
+		break;
+        }
+        return NULL;
+}
+
 static oid vrrp_oid[] = VRRP_OID;
 static struct variable8 vrrp_vars[] = {
 	/* vrrpKeepalivedVersion */
 	{VRRP_SNMP_KEEPALIVEDVERSION, ASN_OCTET_STR, RONLY, vrrp_snmp_scalar, 1, {1}},
 	/* vrrpScriptTable */
-	{VRRP_SNMP_SCRIPT_INDEX, ASN_INTEGER, RONLY, vrrp_snmp_script, 3, {2, 1, 1}},
 	{VRRP_SNMP_SCRIPT_NAME, ASN_OCTET_STR, RONLY, vrrp_snmp_script, 3, {2, 1, 2}},
 	{VRRP_SNMP_SCRIPT_COMMAND, ASN_OCTET_STR, RONLY, vrrp_snmp_script, 3, {2, 1, 3}},
 	{VRRP_SNMP_SCRIPT_INTERVAL, ASN_INTEGER, RONLY, vrrp_snmp_script, 3, {2, 1, 4}},
 	{VRRP_SNMP_SCRIPT_WEIGHT, ASN_INTEGER, RONLY, vrrp_snmp_script, 3, {2, 1, 5}},
 	{VRRP_SNMP_SCRIPT_RESULT, ASN_INTEGER, RONLY, vrrp_snmp_script, 3, {2, 1, 6}},
+	/* vrrpStaticAddressTable */
+	{VRRP_SNMP_STATICADDRESS_ADDRESSTYPE, ASN_INTEGER, RONLY,
+	 vrrp_snmp_staticaddress, 3, {3, 1, 2}},
+	{VRRP_SNMP_STATICADDRESS_VALUE, ASN_OCTET_STR, RONLY,
+	 vrrp_snmp_staticaddress, 3, {3, 1, 3}},
+	{VRRP_SNMP_STATICADDRESS_BROADCAST, ASN_OCTET_STR, RONLY,
+	 vrrp_snmp_staticaddress, 3, {3, 1, 4}},
+	{VRRP_SNMP_STATICADDRESS_MASK, ASN_UNSIGNED, RONLY,
+	 vrrp_snmp_staticaddress, 3, {3, 1, 5}},
+	{VRRP_SNMP_STATICADDRESS_SCOPE, ASN_INTEGER, RONLY,
+	 vrrp_snmp_staticaddress, 3, {3, 1, 6}},
+	{VRRP_SNMP_STATICADDRESS_IFINDEX, ASN_INTEGER, RONLY,
+	 vrrp_snmp_staticaddress, 3, {3, 1, 7}},
+	{VRRP_SNMP_STATICADDRESS_IFNAME, ASN_OCTET_STR, RONLY,
+	 vrrp_snmp_staticaddress, 3, {3, 1, 8}},
+	{VRRP_SNMP_STATICADDRESS_IFALIAS, ASN_OCTET_STR, RONLY,
+	 vrrp_snmp_staticaddress, 3, {3, 1, 9}},
+	{VRRP_SNMP_STATICADDRESS_ISSET, ASN_INTEGER, RONLY,
+	 vrrp_snmp_staticaddress, 3, {3, 1, 10}},
 };
 
 void

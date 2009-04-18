@@ -8,11 +8,16 @@ KEEPALIVED-MIB DEFINITIONS ::= BEGIN
 
 IMPORTS
     OBJECT-TYPE, MODULE-IDENTITY,
-    Integer32, Unsigned32, enterprises
+    Integer32, enterprises
         FROM SNMPv2-SMI
     OBJECT-GROUP, MODULE-COMPLIANCE
     	FROM SNMPv2-CONF
-    DisplayString
+    InetAddressType, InetAddress,
+    InetAddressPrefixLength, InetScopeType
+    	FROM INET-ADDRESS-MIB
+    InterfaceIndex
+    	FROM IF-MIB
+    DisplayString, TruthValue
         FROM SNMPv2-TC;
 
 keepalived MODULE-IDENTITY
@@ -45,6 +50,7 @@ vrrpKeepalivedVersion OBJECT-TYPE
     ::= { vrrp 1 }
 
 -- VRRP scripts
+-- see vrrp_track.h
 
 vrrpScriptTable OBJECT-TYPE
     SYNTAX SEQUENCE OF VrrpScriptEntry
@@ -64,16 +70,16 @@ vrrpScriptEntry OBJECT-TYPE
     ::= { vrrpScriptTable 1 }
 
 VrrpScriptEntry ::= SEQUENCE {
-	vrrpScriptIndex INTEGER,
+	vrrpScriptIndex Integer32,
         vrrpScriptName DisplayString,
         vrrpScriptCommand DisplayString,
         vrrpScriptInterval Integer32,
-        vrrpScriptWeight Unsigned32,
+        vrrpScriptWeight Integer32,
         vrrpScriptResult INTEGER
 }
 
 vrrpScriptIndex OBJECT-TYPE
-    SYNTAX INTEGER
+    SYNTAX Integer32 (1..2147483647)
     MAX-ACCESS not-accessible
     STATUS current
     DESCRIPTION
@@ -126,6 +132,119 @@ vrrpScriptResult OBJECT-TYPE
         "Current status of the script."
     ::= { vrrpScriptEntry 6 }
 
+-- Static ip addresses
+-- see vrrp_address.h
+
+vrrpStaticAddressTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF VrrpStaticAddressEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "Table of static addresses"
+    ::= { vrrp 3 }
+
+vrrpStaticAddressEntry OBJECT-TYPE
+    SYNTAX VrrpStaticAddressEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "Information describing a static address"
+    INDEX { vrrpStaticAddressIndex }
+    ::= { vrrpStaticAddressTable 1 }
+
+VrrpStaticAddressEntry ::= SEQUENCE {
+	vrrpStaticAddressIndex Integer32,
+        vrrpStaticAddressType InetAddressType,
+	vrrpStaticAddressValue InetAddress,
+	vrrpStaticAddressBroadcast InetAddress,
+	vrrpStaticAddressMask InetAddressPrefixLength,
+	vrrpStaticAddressScope InetScopeType,
+	vrrpStaticAddressIfIndex InterfaceIndex,
+	vrrpStaticAddressIfName DisplayString,
+	vrrpStaticAddressIfAlias DisplayString,
+	vrrpStaticAddressIsSet TruthValue
+}
+
+vrrpStaticAddressIndex OBJECT-TYPE
+    SYNTAX Integer32 (1..2147483647)
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+	"Static address index."
+    ::= { vrrpStaticAddressEntry 1 }
+
+vrrpStaticAddressType OBJECT-TYPE
+    SYNTAX InetAddressType
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"A value that represents a type of Internet address."
+    ::= { vrrpStaticAddressEntry 2 }
+
+vrrpStaticAddressValue OBJECT-TYPE
+    SYNTAX InetAddress
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Actual static ip address."
+    ::= { vrrpStaticAddressEntry 3 }
+
+vrrpStaticAddressBroadcast OBJECT-TYPE
+    SYNTAX InetAddress
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Broadcast address associated with the static address."
+    ::= { vrrpStaticAddressEntry 4 }
+
+vrrpStaticAddressMask OBJECT-TYPE
+    SYNTAX InetAddressPrefixLength
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Static address mask."
+    ::= { vrrpStaticAddressEntry 5 }
+
+vrrpStaticAddressScope OBJECT-TYPE
+    SYNTAX InetScopeType
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Static address scope."
+    ::= { vrrpStaticAddressEntry 6 }
+
+vrrpStaticAddressIfIndex OBJECT-TYPE
+    SYNTAX InterfaceIndex
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Index of the interface to which the static address is linked to."
+    ::= { vrrpStaticAddressEntry 7 }
+
+vrrpStaticAddressIfName OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Name of the interface to which the static address is linked to."
+    ::= { vrrpStaticAddressEntry 8 }
+
+vrrpStaticAddressIfAlias OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Alias name of the interface."
+    ::= { vrrpStaticAddressEntry 9 }
+
+vrrpStaticAddressIsSet OBJECT-TYPE
+    SYNTAX TruthValue
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"true(1) if the address is set, false(0) otherwise."
+    ::= { vrrpStaticAddressEntry 10 }
+
 -- ----------------------------------------------------------------------
 -- Conformance
 -- ----------------------------------------------------------------------
@@ -139,9 +258,20 @@ vrrpCompliances MODULE-COMPLIANCE
 	"The core compliance statement"
     MODULE -- this module
     MANDATORY-GROUPS {
-    	vrrpScriptGroup
+    	vrrpGroup,
+	vrrpScriptGroup,
+	vrrpStaticAddressGroup
     }
     ::= { compliances 1 }
+
+vrrpGroup OBJECT-GROUP
+    OBJECTS {
+    	vrrpKeepalivedVersion
+	}
+    STATUS current
+    DESCRIPTION
+	"Conformance group for misc VRRP objects."
+    ::= { groups 1 }
 
 vrrpScriptGroup OBJECT-GROUP
     OBJECTS {
@@ -154,6 +284,23 @@ vrrpScriptGroup OBJECT-GROUP
     STATUS current
     DESCRIPTION
 	"Conformance group for VRRP scripts."
-    ::= { groups 1 }
+    ::= { groups 2 }
+
+vrrpStaticAddressGroup OBJECT-GROUP
+    OBJECTS {
+        vrrpStaticAddressType,
+	vrrpStaticAddressValue,
+	vrrpStaticAddressBroadcast,
+	vrrpStaticAddressMask,
+	vrrpStaticAddressScope,
+	vrrpStaticAddressIfIndex,
+	vrrpStaticAddressIfName,
+	vrrpStaticAddressIfAlias,
+	vrrpStaticAddressIsSet
+	}
+    STATUS current
+    DESCRIPTION
+	"Conformance group for static addresses."
+    ::= { groups 3 }
 
 END
