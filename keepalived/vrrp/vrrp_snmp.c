@@ -26,6 +26,7 @@
 #include "vrrp_data.h"
 #include "vrrp_track.h"
 #include "config.h"
+#include "list.h"
 
 /* Magic */
 #define VRRP_SNMP_KEEPALIVEDVERSION 1
@@ -53,24 +54,24 @@ vrrp_snmp_scalar(struct variable *vp, oid *name, size_t *length,
         return NULL;
 }
 
-static vrrp_script*
-header_vrrpscript_table(struct variable *vp, oid *name, size_t *length,
-			int exact, size_t *var_len, WriteMethod **write_method)
+static void*
+header_list_table(struct variable *vp, oid *name, size_t *length,
+		  int exact, size_t *var_len, WriteMethod **write_method, list dlist)
 {
 	element e;
-	vrrp_script *scr;
+	void *scr;
 	unsigned int target, current;
 
 	if (header_simple_table(vp, name, length, exact, var_len, write_method, -1))
 		return NULL;
 
-	if (LIST_ISEMPTY(vrrp_data->vrrp_script))
+	if (LIST_ISEMPTY(dlist))
 		return NULL;
 
 	target = name[*length - 1];
 	current = 0;
 
-	for (e = LIST_HEAD(vrrp_data->vrrp_script); e; ELEMENT_NEXT(e)) {
+	for (e = LIST_HEAD(dlist); e; ELEMENT_NEXT(e)) {
 		scr = ELEMENT_DATA(e);
 		current++;
 		if (current == target)
@@ -97,8 +98,9 @@ vrrp_snmp_script(struct variable *vp, oid *name, size_t *length,
         static unsigned long long_ret;
 	vrrp_script *scr;
 
-	if ((scr = header_vrrpscript_table(vp, name, length, exact,
-					   var_len, write_method)) == NULL)
+	if ((scr = (vrrp_script *)header_list_table(vp, name, length, exact,
+						    var_len, write_method,
+						    vrrp_data->vrrp_script)) == NULL)
 		return NULL;
 
 	switch (vp->magic) {
