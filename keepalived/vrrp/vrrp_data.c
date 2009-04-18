@@ -358,13 +358,11 @@ alloc_vrrp_vroute(vector strvec)
 void
 alloc_vrrp_script(char *sname)
 {
-	static unsigned int index = 0;
 	int size = strlen(sname);
 	vrrp_script *new;
 
 	/* Allocate new VRRP group structure */
 	new = (vrrp_script *) MALLOC(sizeof (vrrp_script));
-	new->index = index++;
 	new->sname = (char *) MALLOC(size + 1);
 	memcpy(new->sname, sname, size);
 	new->interval = VRRP_SCRIPT_DI * TIMER_HZ;

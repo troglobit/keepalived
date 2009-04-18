@@ -44,4 +44,116 @@ vrrpKeepalivedVersion OBJECT-TYPE
 	"Version of keepalived"
     ::= { vrrp 1 }
 
+-- VRRP scripts
+
+vrrpScriptTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF VrrpScriptEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "Table of VRRP scripts"
+    ::= { vrrp 2 }
+
+vrrpScriptEntry OBJECT-TYPE
+    SYNTAX VrrpScriptEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "Information describing a VRRP script"
+    INDEX { vrrpScriptIndex }
+    ::= { vrrpScriptTable 1 }
+
+VrrpScriptEntry ::= SEQUENCE {
+	vrrpScriptIndex INTEGER,
+        vrrpScriptName DisplayString,
+        vrrpScriptCommand DisplayString,
+        vrrpScriptInterval Integer32,
+        vrrpScriptWeight Unsigned32,
+        vrrpScriptResult INTEGER
+}
+
+vrrpScriptIndex OBJECT-TYPE
+    SYNTAX INTEGER
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+	"Script index."
+    ::= { vrrpScriptEntry 1 }
+
+vrrpScriptName OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+        "Symbolic name of the script."
+    ::= { vrrpScriptEntry 2 }
+
+vrrpScriptCommand OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+        "Command executed when running the script."
+    ::= { vrrpScriptEntry 3 }
+
+vrrpScriptInterval OBJECT-TYPE
+    SYNTAX Integer32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+        "Interval in seconds between two runs of the script."
+    ::= { vrrpScriptEntry 4 }
+
+vrrpScriptWeight OBJECT-TYPE
+    SYNTAX Integer32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+        "Weight of the script if successful."
+    ::= { vrrpScriptEntry 5 }
+
+vrrpScriptResult OBJECT-TYPE
+    SYNTAX INTEGER {
+        disabled(0),
+        init(1),
+        none(2),
+        good(3),
+        initgood(4)
+           }
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+        "Current status of the script."
+    ::= { vrrpScriptEntry 6 }
+
+-- ----------------------------------------------------------------------
+-- Conformance
+-- ----------------------------------------------------------------------
+
+compliances  OBJECT IDENTIFIER ::= { conformance 1 }
+groups	     OBJECT IDENTIFIER ::= { conformance 2 }
+
+vrrpCompliances MODULE-COMPLIANCE
+    STATUS current
+    DESCRIPTION
+	"The core compliance statement"
+    MODULE -- this module
+    MANDATORY-GROUPS {
+    	vrrpScriptGroup
+    }
+    ::= { compliances 1 }
+
+vrrpScriptGroup OBJECT-GROUP
+    OBJECTS {
+    	vrrpScriptName,
+	vrrpScriptCommand,
+	vrrpScriptInterval,
+	vrrpScriptWeight,
+	vrrpScriptResult
+	}
+    STATUS current
+    DESCRIPTION
+	"Conformance group for VRRP scripts."
+    ::= { groups 1 }
+
 END
