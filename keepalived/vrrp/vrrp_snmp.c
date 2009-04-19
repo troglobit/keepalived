@@ -161,7 +161,7 @@ vrrp_snmp_staticaddress(struct variable *vp, oid *name, size_t *length,
 		*var_len = 0;
 		return (u_char*)"";
 	case VRRP_SNMP_STATICADDRESS_ISSET:
-		long_ret = (addr->set == TRUE)?1:2;
+		long_ret = (addr->set)?1:2;
 		return (u_char *)&long_ret;
 	default:
 		break;
@@ -226,7 +226,7 @@ vrrp_snmp_staticroute(struct variable *vp, oid *name, size_t *length,
 		long_ret = route->table;
 		return (u_char *)&long_ret;
 	case VRRP_SNMP_STATICROUTE_ISSET:
-		long_ret = (route->set == TRUE)?1:2;
+		long_ret = (route->set)?1:2;
 		return (u_char *)&long_ret;
 	default:
 		break;
