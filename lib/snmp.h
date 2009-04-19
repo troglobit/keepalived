@@ -33,10 +33,16 @@
 #include <net-snmp/agent/snmp_vars.h>
 #include <net-snmp/agent/util_funcs.h>
 
+#include "list.h"
+
 /* For net-snmp */
 extern int register_sysORTable(oid *, size_t, const char *);
 extern int unregister_sysORTable(oid *, size_t);
 
+extern unsigned long snmp_scope(int scope);
+extern void* snmp_header_list_table(struct variable *vp, oid *name, size_t *length,
+				    int exact, size_t *var_len, WriteMethod **write_method,
+				    list dlist);
 extern void snmp_agent_init(oid *myoid, int len,
 			    char *name, struct variable *variables,
 			    int varsize, int varlen);

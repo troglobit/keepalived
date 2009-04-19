@@ -28,7 +28,6 @@
 #include "vrrp_ipaddress.h"
 #include "vrrp_iproute.h"
 #include "config.h"
-#include "list.h"
 
 /* Magic */
 #define VRRP_SNMP_KEEPALIVEDVERSION 1
@@ -63,20 +62,6 @@
 #define VRRP_SNMP_STATICROUTE_ROUTINGTABLE 30
 #define VRRP_SNMP_STATICROUTE_ISSET 31
 
-static unsigned long
-snmp_scope(int scope)
-{
-	switch (scope) {
-	case 0: return 14;  /* global */
-	case 255: return 0; /* nowhere */
-	case 254: return 1; /* host */
-	case 253: return 2; /* link */
-	case 200: return 5; /* site */
-	default: return 0;
-	}
-	return 0;
-}
-
 static u_char*
 vrrp_snmp_scalar(struct variable *vp, oid *name, size_t *length,
 		 int exact, size_t *var_len, WriteMethod **write_method)
@@ -94,43 +79,6 @@ vrrp_snmp_scalar(struct variable *vp, oid *name, size_t *length,
         return NULL;
 }
 
-static void*
-header_list_table(struct variable *vp, oid *name, size_t *length,
-		  int exact, size_t *var_len, WriteMethod **write_method, list dlist)
-{
-	element e;
-	void *scr;
-	unsigned int target, current;
-
-	if (header_simple_table(vp, name, length, exact, var_len, write_method, -1))
-		return NULL;
-
-	if (LIST_ISEMPTY(dlist))
-		return NULL;
-
-	target = name[*length - 1];
-	current = 0;
-
-	for (e = LIST_HEAD(dlist); e; ELEMENT_NEXT(e)) {
-		scr = ELEMENT_DATA(e);
-		current++;
-		if (current == target)
-			/* Exact match */
-			return scr;
-		if (current < target)
-			/* No match found yet */
-			continue;
-		if (exact)
-			/* No exact match found */
-			return NULL;
-		/* current is the best match */
-		name[*length - 1] = current;
-		return scr;
-	}
-	/* No macth found at end */
-	return NULL;
-}
-
 static u_char*
 vrrp_snmp_script(struct variable *vp, oid *name, size_t *length,
 		 int exact, size_t *var_len, WriteMethod **write_method)
@@ -138,9 +86,9 @@ vrrp_snmp_script(struct variable *vp, oid *name, size_t *length,
         static unsigned long long_ret;
 	vrrp_script *scr;
 
-	if ((scr = (vrrp_script *)header_list_table(vp, name, length, exact,
-						    var_len, write_method,
-						    vrrp_data->vrrp_script)) == NULL)
+	if ((scr = (vrrp_script *)snmp_header_list_table(vp, name, length, exact,
+							 var_len, write_method,
+							 vrrp_data->vrrp_script)) == NULL)
 		return NULL;
 
 	switch (vp->magic) {
@@ -175,9 +123,9 @@ vrrp_snmp_staticaddress(struct variable *vp, oid *name, size_t *length,
         static unsigned long long_ret;
 	ip_address *addr;
 
-	if ((addr = (ip_address *)header_list_table(vp, name, length, exact,
-						    var_len, write_method,
-						    vrrp_data->static_addresses)) == NULL)
+	if ((addr = (ip_address *)snmp_header_list_table(vp, name, length, exact,
+							 var_len, write_method,
+							 vrrp_data->static_addresses)) == NULL)
 		return NULL;
 
 	switch (vp->magic) {
@@ -228,9 +176,9 @@ vrrp_snmp_staticroute(struct variable *vp, oid *name, size_t *length,
         static unsigned long long_ret;
 	ip_route *route;
 
-	if ((route = (ip_route *)header_list_table(vp, name, length, exact,
-						   var_len, write_method,
-						   vrrp_data->static_routes)) == NULL)
+	if ((route = (ip_route *)snmp_header_list_table(vp, name, length, exact,
+							var_len, write_method,
+							vrrp_data->static_routes)) == NULL)
 		return NULL;
 
 	switch (vp->magic) {

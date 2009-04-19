@@ -25,12 +25,64 @@
 #include "snmp.h"
 #include "logger.h"
 
-int
+static int
 snmp_keepalived_log(int major, int minor, void *serverarg, void *clientarg)
 {
 	struct snmp_log_message *slm = (struct snmp_log_message*)serverarg;
 	log_message(slm->priority, "%s", slm->msg);
 	return 0;
+}
+
+/* Convert linux scope to InetScopeType */
+unsigned long
+snmp_scope(int scope)
+{
+	switch (scope) {
+	case 0: return 14;  /* global */
+	case 255: return 0; /* nowhere */
+	case 254: return 1; /* host */
+	case 253: return 2; /* link */
+	case 200: return 5; /* site */
+	default: return 0;
+	}
+	return 0;
+}
+
+void*
+snmp_header_list_table(struct variable *vp, oid *name, size_t *length,
+		  int exact, size_t *var_len, WriteMethod **write_method, list dlist)
+{
+	element e;
+	void *scr;
+	unsigned int target, current;
+
+	if (header_simple_table(vp, name, length, exact, var_len, write_method, -1))
+		return NULL;
+
+	if (LIST_ISEMPTY(dlist))
+		return NULL;
+
+	target = name[*length - 1];
+	current = 0;
+
+	for (e = LIST_HEAD(dlist); e; ELEMENT_NEXT(e)) {
+		scr = ELEMENT_DATA(e);
+		current++;
+		if (current == target)
+			/* Exact match */
+			return scr;
+		if (current < target)
+			/* No match found yet */
+			continue;
+		if (exact)
+			/* No exact match found */
+			return NULL;
+		/* current is the best match */
+		name[*length - 1] = current;
+		return scr;
+	}
+	/* No macth found at end */
+	return NULL;
 }
 
 void
