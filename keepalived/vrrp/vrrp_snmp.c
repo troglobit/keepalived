@@ -172,14 +172,18 @@ vrrp_snmp_staticaddress(struct variable *vp, oid *name, size_t *length,
 			*var_len = strlen(addr->label);
 			return (u_char*)addr->label;
 		}
-		*var_len = 0;
-		return (u_char*)"";
+		break;
 	case VRRP_SNMP_STATICADDRESS_ISSET:
 		long_ret = (addr->set)?1:2;
 		return (u_char *)&long_ret;
 	default:
-		break;
+		return NULL;
         }
+	/* If we are here, we asked for a non existent data. Try the
+	   next one. */
+	if (!exact && (name[*length-1] < MAX_SUBID))
+		return vrrp_snmp_staticaddress(vp, name, length,
+					       exact, var_len, write_method);
         return NULL;
 }
 
@@ -234,8 +238,7 @@ vrrp_snmp_staticroute(struct variable *vp, oid *name, size_t *length,
 			*var_len = strlen(IF_NAME(if_get_by_ifindex(route->index)));
 			return (u_char *)&IF_NAME(if_get_by_ifindex(route->index));
 		}
-		*var_len = 0;
-		return (u_char *)"";
+		break;
 	case VRRP_SNMP_STATICROUTE_ROUTINGTABLE:
 		long_ret = route->table;
 		return (u_char *)&long_ret;
@@ -243,8 +246,13 @@ vrrp_snmp_staticroute(struct variable *vp, oid *name, size_t *length,
 		long_ret = (route->set)?1:2;
 		return (u_char *)&long_ret;
 	default:
-		break;
+		return NULL;
         }
+	/* If we are here, we asked for a non existent data. Try the
+	   next one. */
+	if (!exact && (name[*length-1] < MAX_SUBID))
+		return vrrp_snmp_staticroute(vp, name, length,
+					     exact, var_len, write_method);
         return NULL;
 }
 
@@ -282,32 +290,33 @@ vrrp_snmp_syncgroup(struct variable *vp, oid *name, size_t *length,
 			*var_len = strlen(group->script_master);
 			return (u_char *)group->script_master;
 		}
-		*var_len = 0;
-		return (u_char *)"";
+		break;
 	case VRRP_SNMP_SYNCGROUP_SCRIPTBACKUP:
 		if (group->script_backup) {
 			*var_len = strlen(group->script_backup);
 			return (u_char *)group->script_backup;
 		}
-		*var_len = 0;
-		return (u_char *)"";
+		break;
 	case VRRP_SNMP_SYNCGROUP_SCRIPTFAULT:
 		if (group->script_fault) {
 			*var_len = strlen(group->script_fault);
 			return (u_char *)group->script_fault;
 		}
-		*var_len = 0;
-		return (u_char *)"";
+		break;
 	case VRRP_SNMP_SYNCGROUP_SCRIPT:
 		if (group->script) {
 			*var_len = strlen(group->script);
 			return (u_char *)group->script;
 		}
-		*var_len = 0;
-		return (u_char *)"";
-	default:
 		break;
+	default:
+		return NULL;
         }
+	/* If we are here, we asked for a non existent data. Try the
+	   next one. */
+	if (!exact && (name[*length-1] < MAX_SUBID))
+		return vrrp_snmp_syncgroup(vp, name, length,
+					   exact, var_len, write_method);
         return NULL;
 }
 
