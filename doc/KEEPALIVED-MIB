@@ -17,7 +17,7 @@ IMPORTS
     	FROM INET-ADDRESS-MIB
     InterfaceIndex
     	FROM IF-MIB
-    DisplayString, TruthValue
+    DisplayString, TruthValue, TEXTUAL-CONVENTION
         FROM SNMPv2-TC;
 
 keepalived MODULE-IDENTITY
@@ -32,6 +32,18 @@ keepalived MODULE-IDENTITY
      DESCRIPTION "Initial revision"
 
      ::= { enterprises 60000 }
+
+VrrpState ::= TEXTUAL-CONVENTION
+    STATUS       current
+    DESCRIPTION
+	"Represents a VRRP state."
+    SYNTAX INTEGER {
+    	init(0),
+	backup(1),
+	master(2),
+	fault(3),
+	unknown(4)
+	}
 
 vrrp                    OBJECT IDENTIFIER ::= { keepalived 1 }
 check                   OBJECT IDENTIFIER ::= { keepalived 2 }
@@ -394,6 +406,160 @@ vrrpStaticRouteIsSet OBJECT-TYPE
 	"Is this static route set in the kernel?"
     ::= { vrrpStaticRouteEntry 14 }
 
+-- Sync groups
+-- see vrrp.h
+
+vrrpSyncGroupTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF VrrpSyncGroupEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "Table of sync groups"
+    ::= { vrrp 5 }
+
+vrrpSyncGroupEntry OBJECT-TYPE
+    SYNTAX VrrpSyncGroupEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "Information describing a sync group"
+    INDEX { vrrpSyncGroupIndex }
+    ::= { vrrpSyncGroupTable 1 }
+
+VrrpSyncGroupEntry ::= SEQUENCE {
+	vrrpSyncGroupIndex Integer32,
+	vrrpSyncGroupName DisplayString,
+	vrrpSyncGroupState VrrpState,
+	vrrpSyncGroupSmtpAlert TruthValue,
+	vrrpSyncGroupNotifyExec TruthValue,
+	vrrpSyncGroupScriptMaster DisplayString,
+	vrrpSyncGroupScriptBackup DisplayString,
+	vrrpSyncGroupScriptFault DisplayString,
+	vrrpSyncGroupScript DisplayString
+}
+
+vrrpSyncGroupIndex OBJECT-TYPE
+    SYNTAX Integer32 (1..2147483647)
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+	"Index of the synchronisation group."
+    ::= { vrrpSyncGroupEntry 1 }
+
+vrrpSyncGroupName OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Name of the synchronisation group."
+    ::= {vrrpSyncGroupEntry 2 }
+
+vrrpSyncGroupState OBJECT-TYPE
+    SYNTAX VrrpState
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Current state of the synchronisation group."
+    ::= {vrrpSyncGroupEntry 3 }
+
+vrrpSyncGroupSmtpAlert OBJECT-TYPE
+    SYNTAX TruthValue
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Will SMTP alert be sent for this synchronisation group?"
+    ::= {vrrpSyncGroupEntry 4 }
+
+vrrpSyncGroupNotifyExec OBJECT-TYPE
+    SYNTAX TruthValue
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Will we execute notification script for this group?"
+    ::= {vrrpSyncGroupEntry 5 }
+
+vrrpSyncGroupScriptMaster OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Script to execute when the group becomes master."
+    ::= {vrrpSyncGroupEntry 6 }
+
+vrrpSyncGroupScriptBackup OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Script to execute when the group becomes backup."
+    ::= {vrrpSyncGroupEntry 7 }
+
+vrrpSyncGroupScriptFault OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Script to execute when the group is in fault state."
+    ::= {vrrpSyncGroupEntry 8 }
+
+vrrpSyncGroupScript OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Script to execute whenever a state change occurs."
+    ::= {vrrpSyncGroupEntry 9 }
+
+vrrpSyncGroupMemberTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF VrrpSyncGroupMemberEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "Table of instances contained in sync groups"
+    ::= { vrrp 6 }
+
+vrrpSyncGroupMemberEntry OBJECT-TYPE
+    SYNTAX VrrpSyncGroupMemberEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "Information describing a member of a sync group"
+    INDEX { vrrpSyncGroupMemberGroupIndex, vrrpSyncGroupMemberInstanceIndex }
+    ::= { vrrpSyncGroupMemberTable 1 }
+
+VrrpSyncGroupMemberEntry ::= SEQUENCE {
+	vrrpSyncGroupMemberGroupIndex Integer32,
+	vrrpSyncGroupMemberInstanceIndex Integer32,
+	vrrpSyncGroupMemberName DisplayString
+}
+
+vrrpSyncGroupMemberGroupIndex OBJECT-TYPE
+    SYNTAX Integer32 (1..2147483647)
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+	"Index of the synchronisation group, as in vrrpSyncGroup table."
+    ::= { vrrpSyncGroupMemberEntry 1 }
+
+vrrpSyncGroupMemberInstanceIndex OBJECT-TYPE
+    SYNTAX Integer32 (1..2147483647)
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+	"Index of an instance in a synchronisation group.
+	 There is no relation with this index and the index of the
+	 corresponding instance in vrrpInstanceTable. Use the name
+	 to find out the corresponding instance."
+    ::= { vrrpSyncGroupMemberEntry 2 }
+
+vrrpSyncGroupMemberName OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Name of the instance contained in the synchronisation group."
+    ::= { vrrpSyncGroupMemberEntry 3 }
+
 -- ----------------------------------------------------------------------
 -- Conformance
 -- ----------------------------------------------------------------------
@@ -410,7 +576,8 @@ vrrpCompliances MODULE-COMPLIANCE
     	vrrpGroup,
 	vrrpScriptGroup,
 	vrrpStaticAddressGroup,
-	vrrpStaticRouteGroup
+	vrrpStaticRouteGroup,
+	vrrpSyncGroup
     }
     ::= { compliances 1 }
 
@@ -473,5 +640,22 @@ vrrpStaticRouteGroup OBJECT-GROUP
     DESCRIPTION
 	"Conformance group for static routes."
     ::= { groups 4 }
+
+vrrpSyncGroup OBJECT-GROUP
+    OBJECTS {
+	vrrpSyncGroupName,
+	vrrpSyncGroupState,
+	vrrpSyncGroupSmtpAlert,
+	vrrpSyncGroupNotifyExec,
+	vrrpSyncGroupScriptMaster,
+	vrrpSyncGroupScriptBackup,
+	vrrpSyncGroupScriptFault,
+	vrrpSyncGroupScript,
+	vrrpSyncGroupMemberName
+	}
+    STATUS current
+    DESCRIPTION
+	"Conformance group for synchronisation groups."
+    ::= { groups 5 }
 
 END

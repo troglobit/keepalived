@@ -22,12 +22,14 @@
  * Copyright (C) 2001-2009 Alexandre Cassen, <acassen@freebox.fr>
  */
 
+#include "vrrp.h"
 #include "vrrp_snmp.h"
 #include "vrrp_data.h"
 #include "vrrp_track.h"
 #include "vrrp_ipaddress.h"
 #include "vrrp_iproute.h"
 #include "config.h"
+#include "vector.h"
 
 /* Magic */
 #define VRRP_SNMP_KEEPALIVEDVERSION 1
@@ -61,6 +63,18 @@
 #define VRRP_SNMP_STATICROUTE_IFNAME 29
 #define VRRP_SNMP_STATICROUTE_ROUTINGTABLE 30
 #define VRRP_SNMP_STATICROUTE_ISSET 31
+#define VRRP_SNMP_SYNCGROUP_INDEX 32
+#define VRRP_SNMP_SYNCGROUP_NAME 33
+#define VRRP_SNMP_SYNCGROUP_STATE 34
+#define VRRP_SNMP_SYNCGROUP_SMTPALERT 35
+#define VRRP_SNMP_SYNCGROUP_NOTIFYEXEC 36
+#define VRRP_SNMP_SYNCGROUP_SCRIPTMASTER 37
+#define VRRP_SNMP_SYNCGROUP_SCRIPTBACKUP 38
+#define VRRP_SNMP_SYNCGROUP_SCRIPTFAULT 39
+#define VRRP_SNMP_SYNCGROUP_SCRIPT 40
+#define VRRP_SNMP_SYNCGROUPMEMBER_GROUP 41
+#define VRRP_SNMP_SYNCGROUPMEMBER_INSTANCE 42
+#define VRRP_SNMP_SYNCGROUPMEMBER_NAME 43
 
 static u_char*
 vrrp_snmp_scalar(struct variable *vp, oid *name, size_t *length,
@@ -234,6 +248,136 @@ vrrp_snmp_staticroute(struct variable *vp, oid *name, size_t *length,
         return NULL;
 }
 
+static u_char*
+vrrp_snmp_syncgroup(struct variable *vp, oid *name, size_t *length,
+		 int exact, size_t *var_len, WriteMethod **write_method)
+{
+        static unsigned long long_ret;
+	vrrp_sgroup *group;
+
+	if ((group = (vrrp_sgroup *)
+	     snmp_header_list_table(vp, name, length, exact,
+				    var_len, write_method,
+				    vrrp_data->vrrp_sync_group)) == NULL)
+		return NULL;
+
+	switch (vp->magic) {
+	case VRRP_SNMP_SYNCGROUP_INDEX:
+                long_ret = name[*length - 1];
+		return (u_char *)&long_ret;
+	case VRRP_SNMP_SYNCGROUP_NAME:
+		*var_len = strlen(group->gname);
+		return (u_char *)group->gname;
+	case VRRP_SNMP_SYNCGROUP_STATE:
+		long_ret = (group->state<VRRP_STATE_GOTO_MASTER)?group->state:4;
+		return (u_char *)&long_ret;
+	case VRRP_SNMP_SYNCGROUP_SMTPALERT:
+		long_ret = group->smtp_alert?1:2;
+		return (u_char *)&long_ret;
+	case VRRP_SNMP_SYNCGROUP_NOTIFYEXEC:
+		long_ret = group->notify_exec?1:2;
+		return (u_char *)&long_ret;
+	case VRRP_SNMP_SYNCGROUP_SCRIPTMASTER:
+		if (group->script_master) {
+			*var_len = strlen(group->script_master);
+			return (u_char *)group->script_master;
+		}
+		*var_len = 0;
+		return (u_char *)"";
+	case VRRP_SNMP_SYNCGROUP_SCRIPTBACKUP:
+		if (group->script_backup) {
+			*var_len = strlen(group->script_backup);
+			return (u_char *)group->script_backup;
+		}
+		*var_len = 0;
+		return (u_char *)"";
+	case VRRP_SNMP_SYNCGROUP_SCRIPTFAULT:
+		if (group->script_fault) {
+			*var_len = strlen(group->script_fault);
+			return (u_char *)group->script_fault;
+		}
+		*var_len = 0;
+		return (u_char *)"";
+	case VRRP_SNMP_SYNCGROUP_SCRIPT:
+		if (group->script) {
+			*var_len = strlen(group->script);
+			return (u_char *)group->script;
+		}
+		*var_len = 0;
+		return (u_char *)"";
+	default:
+		break;
+        }
+        return NULL;
+}
+
+static u_char*
+vrrp_snmp_syncgroupmember(struct variable *vp, oid *name, size_t *length,
+			  int exact, size_t *var_len, WriteMethod **write_method)
+{
+        oid *target, current[2], best[2];
+        int result, target_len;
+	int curgroup, curinstance;
+	char *instance, *binstance = NULL;
+	element e;
+	vrrp_sgroup *group;
+
+        if ((result = snmp_oid_compare(name, *length, vp->name, vp->namelen)) < 0) {
+                memcpy(name, vp->name, sizeof(oid) * vp->namelen);
+                *length = vp->namelen;
+        }
+
+	*write_method = 0;
+	*var_len = sizeof(long);
+
+	if (LIST_ISEMPTY(vrrp_data->vrrp_sync_group))
+		return NULL;
+
+	/* We search the best match: equal if exact, the lower OID in
+	   the set of the OID strictly superior to the target
+	   otherwise. */
+        best[0] = best[1] = MAX_SUBID; /* Our best match */
+        target = &name[vp->namelen];   /* Our target match */
+        target_len = *length - vp->namelen;
+	curgroup = 0;
+	for (e = LIST_HEAD(vrrp_data->vrrp_sync_group); e; ELEMENT_NEXT(e)) {
+		group = ELEMENT_DATA(e);
+		curgroup++;
+		vector_foreach_slot(group->iname, instance, curinstance) {
+			/* We build our current match */
+			current[0] = curgroup;
+			current[1] = curinstance + 1;
+			/* And compare it to our target match */
+			if ((result = snmp_oid_compare(current, 2, target,
+						       target_len)) < 0)
+				continue;
+			if ((result == 0) && !exact)
+				continue;
+			if (result == 0) {
+				/* Got an exact match and asked for it */
+				*var_len = strlen(instance);
+				return (u_char *)instance;
+			}
+			if (snmp_oid_compare(current, 2, best, 2) < 0) {
+				/* This is our best match */
+				memcpy(best, current, sizeof(oid) * 2);
+				binstance = instance;
+			}
+		}
+	}
+	if (binstance == NULL)
+		/* No best match */
+		return NULL;
+	if (exact)
+		/* No exact match */
+		return NULL;
+	/* Let's use our best match */
+        memcpy(target, best, sizeof(oid) * 2);
+        *length = vp->namelen + 2;
+	*var_len = strlen(binstance);
+	return (u_char*)binstance;
+}
+
 static oid vrrp_oid[] = VRRP_OID;
 static struct variable8 vrrp_vars[] = {
 	/* vrrpKeepalivedVersion */
@@ -290,6 +434,26 @@ static struct variable8 vrrp_vars[] = {
 	 vrrp_snmp_staticroute, 3, {4, 1, 13}},
 	{VRRP_SNMP_STATICROUTE_ISSET, ASN_INTEGER, RONLY,
 	 vrrp_snmp_staticroute, 3, {4, 1, 14}},
+	/* vrrpSyncGroupTable */
+	{VRRP_SNMP_SYNCGROUP_NAME, ASN_OCTET_STR, RONLY,
+	 vrrp_snmp_syncgroup, 3, {5, 1, 2}},
+	{VRRP_SNMP_SYNCGROUP_STATE, ASN_INTEGER, RONLY,
+	 vrrp_snmp_syncgroup, 3, {5, 1, 3}},
+	{VRRP_SNMP_SYNCGROUP_SMTPALERT, ASN_INTEGER, RONLY,
+	 vrrp_snmp_syncgroup, 3, {5, 1, 4}},
+	{VRRP_SNMP_SYNCGROUP_NOTIFYEXEC, ASN_INTEGER, RONLY,
+	 vrrp_snmp_syncgroup, 3, {5, 1, 5}},
+	{VRRP_SNMP_SYNCGROUP_SCRIPTMASTER, ASN_OCTET_STR, RONLY,
+	 vrrp_snmp_syncgroup, 3, {5, 1, 6}},
+	{VRRP_SNMP_SYNCGROUP_SCRIPTBACKUP, ASN_OCTET_STR, RONLY,
+	 vrrp_snmp_syncgroup, 3, {5, 1, 7}},
+	{VRRP_SNMP_SYNCGROUP_SCRIPTFAULT, ASN_OCTET_STR, RONLY,
+	 vrrp_snmp_syncgroup, 3, {5, 1, 8}},
+	{VRRP_SNMP_SYNCGROUP_SCRIPT, ASN_OCTET_STR, RONLY,
+	 vrrp_snmp_syncgroup, 3, {5, 1, 9}},
+	/* vrrpSyncGroupMemberTable */
+	{VRRP_SNMP_SYNCGROUPMEMBER_NAME, ASN_OCTET_STR, RONLY,
+	 vrrp_snmp_syncgroupmember, 3, {6, 1, 3}},
 };
 
 void
