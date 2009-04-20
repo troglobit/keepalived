@@ -854,6 +854,55 @@ vrrpTrackedInterfaceWeight OBJECT-TYPE
         "Weight of the tracked interface."
     ::= { vrrpTrackedInterfaceEntry 2 }
 
+vrrpTrackedScriptTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF VrrpTrackedScriptEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "Table of tracked interfaces for each VRRP instance."
+    ::= { vrrp 9 }
+
+vrrpTrackedScriptEntry OBJECT-TYPE
+    SYNTAX VrrpTrackedScriptEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "Information describing a tracked script"
+    INDEX { vrrpInstanceIndex, vrrpTrackedScriptIndex }
+    ::= { vrrpTrackedScriptTable 1 }
+
+VrrpTrackedScriptEntry ::= SEQUENCE {
+	vrrpTrackedScriptIndex Integer32,
+	vrrpTrackedScriptName DisplayString,
+	vrrpTrackedScriptWeight Integer32
+}
+
+vrrpTrackedScriptIndex OBJECT-TYPE
+    SYNTAX Integer32 (1..2147483647)
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+	"Index of the tracked script in the set of tracked scripts for
+	 the given VRRP instance. This index has no relation with the
+	 index of vrrpScriptTable."
+    ::= { vrrpTrackedScriptEntry 1 }
+
+vrrpTrackedScriptName OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Name of the tracked interface."
+    ::= { vrrpTrackedScriptEntry 2 }
+
+vrrpTrackedScriptWeight OBJECT-TYPE
+    SYNTAX Integer32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+        "Weight of the tracked interface."
+    ::= { vrrpTrackedScriptEntry 3 }
+
 -- ----------------------------------------------------------------------
 -- Conformance
 -- ----------------------------------------------------------------------
@@ -873,7 +922,8 @@ vrrpCompliances MODULE-COMPLIANCE
 	vrrpStaticRouteGroup,
 	vrrpSyncGroup,
 	vrrpInstanceGroup,
-	vrrpTrackedInterfaceGroup
+	vrrpTrackedInterfaceGroup,
+	vrrpTrackedScriptGroup
     }
     ::= { compliances 1 }
 
@@ -996,5 +1046,15 @@ vrrpTrackedInterfaceGroup OBJECT-GROUP
     DESCRIPTION
 	"Conformance group for VRRP tracked interfaces."
     ::= { groups 7 }
+
+vrrpTrackedScriptGroup OBJECT-GROUP
+    OBJECTS {
+	vrrpTrackedScriptName,
+	vrrpTrackedScriptWeight
+	}
+    STATUS current
+    DESCRIPTION
+	"Conformance group for VRRP tracked scripts."
+    ::= { groups 8 }
 
 END
