@@ -15,7 +15,7 @@ IMPORTS
     InetAddressType, InetAddress,
     InetAddressPrefixLength, InetScopeType
     	FROM INET-ADDRESS-MIB
-    InterfaceIndex
+    InterfaceIndex, ifIndex
     	FROM IF-MIB
     DisplayString, TruthValue, TEXTUAL-CONVENTION
         FROM SNMPv2-TC;
@@ -816,6 +816,44 @@ vrrpInstanceScript OBJECT-TYPE
 	"Script to execute whenever a state change occurs."
     ::= { vrrpInstanceEntry 26 }
 
+vrrpTrackedInterfaceTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF VrrpTrackedInterfaceEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "Table of tracked interfaces for each VRRP instance."
+    ::= { vrrp 8 }
+
+vrrpTrackedInterfaceEntry OBJECT-TYPE
+    SYNTAX VrrpTrackedInterfaceEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "Information describing a tracked interface"
+    INDEX { vrrpInstanceIndex, ifIndex }
+    ::= { vrrpTrackedInterfaceTable 1 }
+
+VrrpTrackedInterfaceEntry ::= SEQUENCE {
+	vrrpTrackedInterfaceName DisplayString,
+	vrrpTrackedInterfaceWeight Integer32
+}
+
+vrrpTrackedInterfaceName OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Name of the tracked interface."
+    ::= { vrrpTrackedInterfaceEntry 1 }
+
+vrrpTrackedInterfaceWeight OBJECT-TYPE
+    SYNTAX Integer32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+        "Weight of the tracked interface."
+    ::= { vrrpTrackedInterfaceEntry 2 }
+
 -- ----------------------------------------------------------------------
 -- Conformance
 -- ----------------------------------------------------------------------
@@ -834,7 +872,8 @@ vrrpCompliances MODULE-COMPLIANCE
 	vrrpStaticAddressGroup,
 	vrrpStaticRouteGroup,
 	vrrpSyncGroup,
-	vrrpInstanceGroup
+	vrrpInstanceGroup,
+	vrrpTrackedInterfaceGroup
     }
     ::= { compliances 1 }
 
@@ -947,5 +986,15 @@ vrrpInstanceGroup OBJECT-GROUP
     DESCRIPTION
 	"Conformance group for VRRP instances."
     ::= { groups 6 }
+
+vrrpTrackedInterfaceGroup OBJECT-GROUP
+    OBJECTS {
+	vrrpTrackedInterfaceName,
+	vrrpTrackedInterfaceWeight
+	}
+    STATUS current
+    DESCRIPTION
+	"Conformance group for VRRP tracked interfaces."
+    ::= { groups 7 }
 
 END

@@ -100,6 +100,8 @@
 #define VRRP_SNMP_INSTANCE_SCRIPTFAULT 67
 #define VRRP_SNMP_INSTANCE_SCRIPTSTOP 68
 #define VRRP_SNMP_INSTANCE_SCRIPT 69
+#define VRRP_SNMP_TRACKEDINTERFACE_NAME 70
+#define VRRP_SNMP_TRACKEDINTERFACE_WEIGHT 71
 
 /* Convert VRRP state to SNMP state */
 static unsigned long
@@ -513,8 +515,6 @@ vrrp_snmp_instance(struct variable *vp, oid *name, size_t *length,
 			return (u_char *)rt->script_backup;
 		}
 		break;
-		long_ret = 1;
-		return (u_char *)&long_ret;
 	case VRRP_SNMP_INSTANCE_SCRIPTFAULT:
 		if (rt->script_fault) {
 			*var_len = strlen(rt->script_fault);
@@ -542,6 +542,85 @@ vrrp_snmp_instance(struct variable *vp, oid *name, size_t *length,
 		return vrrp_snmp_instance(vp, name, length,
 					  exact, var_len, write_method);
         return NULL;
+}
+
+static u_char*
+vrrp_snmp_trackedinterface(struct variable *vp, oid *name, size_t *length,
+			   int exact, size_t *var_len, WriteMethod **write_method)
+{
+	static unsigned long long_ret;
+        oid *target, current[2], best[2];
+        int result, target_len;
+	int curinstance;
+	element e1, e2;
+	vrrp_rt *instance;
+	tracked_if *ifp, *bifp = NULL;
+
+        if ((result = snmp_oid_compare(name, *length, vp->name, vp->namelen)) < 0) {
+                memcpy(name, vp->name, sizeof(oid) * vp->namelen);
+                *length = vp->namelen;
+        }
+
+	*write_method = 0;
+	*var_len = sizeof(long);
+
+	if (LIST_ISEMPTY(vrrp_data->vrrp))
+		return NULL;
+
+	/* We search the best match: equal if exact, the lower OID in
+	   the set of the OID strictly superior to the target
+	   otherwise. */
+        best[0] = best[1] = MAX_SUBID; /* Our best match */
+        target = &name[vp->namelen];   /* Our target match */
+        target_len = *length - vp->namelen;
+	curinstance = 0;
+	for (e1 = LIST_HEAD(vrrp_data->vrrp); e1; ELEMENT_NEXT(e1)) {
+		instance = ELEMENT_DATA(e1);
+		curinstance++;
+		if (LIST_ISEMPTY(instance->track_ifp))
+			continue;
+		for (e2 = LIST_HEAD(instance->track_ifp); e2; ELEMENT_NEXT(e2)) {
+			ifp = ELEMENT_DATA(e2);
+			/* We build our current match */
+			current[0] = curinstance;
+			current[1] = ifp->ifp->ifindex;
+			/* And compare it to our target match */
+			if ((result = snmp_oid_compare(current, 2, target,
+						       target_len)) < 0)
+				continue;
+			if ((result == 0) && !exact)
+				continue;
+			if (result == 0) {
+				/* Got an exact match and asked for it */
+				bifp = ifp;
+				goto trackedinterface_found;
+			}
+			if (snmp_oid_compare(current, 2, best, 2) < 0) {
+				/* This is our best match */
+				memcpy(best, current, sizeof(oid) * 2);
+				bifp = ifp;
+			}
+		}
+	}
+	if (bifp == NULL)
+		/* No best match */
+		return NULL;
+	if (exact)
+		/* No exact match */
+		return NULL;
+	/* Let's use our best match */
+        memcpy(target, best, sizeof(oid) * 2);
+        *length = vp->namelen + 2;
+ trackedinterface_found:
+	switch (vp->magic) {
+	case VRRP_SNMP_TRACKEDINTERFACE_NAME:
+		*var_len = strlen(bifp->ifp->ifname);
+		return (u_char *)bifp->ifp->ifname;
+	case VRRP_SNMP_TRACKEDINTERFACE_WEIGHT:
+		long_ret = bifp->weight;
+		return (u_char *)&long_ret;
+	}
+	return NULL;
 }
 
 static oid vrrp_oid[] = VRRP_OID;
@@ -671,6 +750,11 @@ static struct variable8 vrrp_vars[] = {
 	 vrrp_snmp_instance, 3, {7, 1, 25}},
 	{VRRP_SNMP_INSTANCE_SCRIPT, ASN_OCTET_STR, RONLY,
 	 vrrp_snmp_instance, 3, {7, 1, 26}},
+	/* vrrpTrackedInterfaceTable */
+	{VRRP_SNMP_TRACKEDINTERFACE_NAME, ASN_OCTET_STR, RONLY,
+	 vrrp_snmp_trackedinterface, 3, {8, 1, 1}},
+	{VRRP_SNMP_TRACKEDINTERFACE_WEIGHT, ASN_INTEGER, RONLY,
+	 vrrp_snmp_trackedinterface, 3, {8, 1, 2}},
 };
 
 void
