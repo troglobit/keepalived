@@ -560,6 +560,271 @@ vrrpSyncGroupMemberName OBJECT-TYPE
 	"Name of the instance contained in the synchronisation group."
     ::= { vrrpSyncGroupMemberEntry 3 }
 
+-- VRRP instances
+-- see vrrp.h
+
+vrrpInstanceTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF VrrpInstanceEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "Table of VRRP instances"
+    ::= { vrrp 7 }
+
+vrrpInstanceEntry OBJECT-TYPE
+    SYNTAX VrrpInstanceEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "Information describing a sync group"
+    INDEX { vrrpInstanceIndex }
+    ::= { vrrpInstanceTable 1 }
+
+VrrpInstanceEntry ::= SEQUENCE {
+	vrrpInstanceIndex Integer32,
+	vrrpInstanceName DisplayString,
+	vrrpInstanceVirtualRouterId Unsigned32,
+	vrrpInstanceState VrrpState,
+	vrrpInstanceInitialState VrrpState,
+	vrrpInstanceWantedState VrrpState,
+	vrrpInstanceBasePriority Integer32,
+	vrrpInstanceEffectivePriority Integer32,
+	vrrpInstanceVipsEnabled TruthValue,
+	vrrpInstancePrimaryInterface DisplayString,
+	vrrpInstanceTrackPrimaryIf TruthValue,
+	vrrpInstanceAdvertisementsInt Unsigned32,
+	vrrpInstancePreempt TruthValue,
+	vrrpInstancePreemptDelay Unsigned32,
+	vrrpInstanceAuthType INTEGER,
+	vrrpInstanceUseLvsSyncDaemon TruthValue,
+	vrrpInstanceLvsSyncInterface DisplayString,
+	vrrpInstanceSyncGroup DisplayString,
+	vrrpInstanceGarpDelay Unsigned32,
+	vrrpInstanceSmtpAlert TruthValue,
+	vrrpInstanceNotifyExec TruthValue,
+	vrrpInstanceScriptMaster DisplayString,
+	vrrpInstanceScriptBackup DisplayString,
+	vrrpInstanceScriptFault DisplayString,
+	vrrpInstanceScriptStop DisplayString,
+	vrrpInstanceScript DisplayString
+}
+
+vrrpInstanceIndex OBJECT-TYPE
+    SYNTAX Integer32 (1..2147483647)
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+	"Index of the VRRP instance."
+    ::= { vrrpInstanceEntry 1 }
+
+vrrpInstanceName OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Name of the VRRP instance."
+    ::= { vrrpInstanceEntry 2 }
+
+vrrpInstanceVirtualRouterId OBJECT-TYPE
+    SYNTAX Unsigned32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Virtual Router ID (VRID) for this VRRP instance."
+    ::= { vrrpInstanceEntry 3 }
+
+vrrpInstanceState OBJECT-TYPE
+    SYNTAX VrrpState
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Current state of this VRRP instance."
+    ::= { vrrpInstanceEntry 4 }
+
+vrrpInstanceInitialState OBJECT-TYPE
+    SYNTAX VrrpState
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Initial state of this VRRP instance."
+    ::= { vrrpInstanceEntry 5 }
+
+vrrpInstanceWantedState OBJECT-TYPE
+    SYNTAX VrrpState
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"State wanted by the operator for this VRRP instance."
+    ::= { vrrpInstanceEntry 6 }
+
+vrrpInstanceBasePriority OBJECT-TYPE
+    SYNTAX Integer32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Base priority (as defined in the configuration file) for this
+	 VRRP instance."
+    ::= { vrrpInstanceEntry 7 }
+
+vrrpInstanceEffectivePriority OBJECT-TYPE
+    SYNTAX Integer32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Effective priority for this VRRP instance. Status of
+	 interfaces and script results are used to compute this value
+	 from the base priority."
+    ::= { vrrpInstanceEntry 8 }
+
+vrrpInstanceVipsEnabled OBJECT-TYPE
+    SYNTAX TruthValue
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Are all VIP of this VRRP instance enabled?"
+    ::= { vrrpInstanceEntry 9 }
+
+vrrpInstancePrimaryInterface OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Primary interface of this VRRP instance."
+    ::= { vrrpInstanceEntry 10 }
+
+vrrpInstanceTrackPrimaryIf OBJECT-TYPE
+    SYNTAX TruthValue
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Do we track the status of the primary interface?"
+    ::= { vrrpInstanceEntry 11 }
+
+vrrpInstanceAdvertisementsInt OBJECT-TYPE
+    SYNTAX Unsigned32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Delay in seconds between two VRRP advertisements."
+    ::= { vrrpInstanceEntry 12 }
+
+vrrpInstancePreempt OBJECT-TYPE
+    SYNTAX TruthValue
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Will a higher priority advertisement preempt a lower instance?"
+    ::= { vrrpInstanceEntry 13 }
+
+vrrpInstancePreemptDelay OBJECT-TYPE
+    SYNTAX Unsigned32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Delay after startup until preemption can happen. 0 means that
+	 there is no delay."
+    ::= { vrrpInstanceEntry 14 }
+
+vrrpInstanceAuthType OBJECT-TYPE
+    SYNTAX INTEGER {
+    		none(0),
+		password(1),
+		ah(2)
+		}
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Authentication method to authenticate other peers."
+    ::= { vrrpInstanceEntry 15 }
+
+vrrpInstanceUseLvsSyncDaemon OBJECT-TYPE
+    SYNTAX TruthValue
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Is LVS sync daemon enabled for this VRRP instance?"
+    ::= { vrrpInstanceEntry 16 }
+
+vrrpInstanceLvsSyncInterface OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"If LVS sync daemon is enabled, which interface to use for syncing?"
+    ::= { vrrpInstanceEntry 17 }
+
+vrrpInstanceSyncGroup OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Name of the synchronisation group this VRRP instance belongs, if any."
+    ::= { vrrpInstanceEntry 18 }
+
+vrrpInstanceGarpDelay OBJECT-TYPE
+    SYNTAX Unsigned32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Delay to launch gratuitous ARP (GARP)."
+    ::= { vrrpInstanceEntry 19 }
+
+vrrpInstanceSmtpAlert OBJECT-TYPE
+    SYNTAX TruthValue
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Will SMTP alert be sent for this VRRP instance?"
+    ::= { vrrpInstanceEntry 20 }
+
+vrrpInstanceNotifyExec OBJECT-TYPE
+    SYNTAX TruthValue
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Will we execute notification script for this instance?"
+    ::= { vrrpInstanceEntry 21 }
+
+vrrpInstanceScriptMaster OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Script to execute when the instance becomes master."
+    ::= { vrrpInstanceEntry 22 }
+
+vrrpInstanceScriptBackup OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Script to execute when the instance becomes backup."
+    ::= { vrrpInstanceEntry 23 }
+
+vrrpInstanceScriptFault OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Script to execute when the instance is in fault state."
+    ::= { vrrpInstanceEntry 24 }
+
+vrrpInstanceScriptStop OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Script to execute when the instance is stopped."
+    ::= { vrrpInstanceEntry 25 }
+
+vrrpInstanceScript OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Script to execute whenever a state change occurs."
+    ::= { vrrpInstanceEntry 26 }
+
 -- ----------------------------------------------------------------------
 -- Conformance
 -- ----------------------------------------------------------------------
@@ -577,7 +842,8 @@ vrrpCompliances MODULE-COMPLIANCE
 	vrrpScriptGroup,
 	vrrpStaticAddressGroup,
 	vrrpStaticRouteGroup,
-	vrrpSyncGroup
+	vrrpSyncGroup,
+	vrrpInstanceGroup
     }
     ::= { compliances 1 }
 
@@ -657,5 +923,38 @@ vrrpSyncGroup OBJECT-GROUP
     DESCRIPTION
 	"Conformance group for synchronisation groups."
     ::= { groups 5 }
+
+vrrpInstanceGroup OBJECT-GROUP
+    OBJECTS {
+	vrrpInstanceName,
+	vrrpInstanceVirtualRouterId,
+	vrrpInstanceState,
+	vrrpInstanceInitialState,
+	vrrpInstanceWantedState,
+	vrrpInstanceBasePriority,
+	vrrpInstanceEffectivePriority,
+	vrrpInstanceVipsEnabled,
+	vrrpInstancePrimaryInterface,
+	vrrpInstanceTrackPrimaryIf,
+	vrrpInstanceAdvertisementsInt,
+	vrrpInstancePreempt,
+	vrrpInstancePreemptDelay,
+	vrrpInstanceAuthType,
+	vrrpInstanceUseLvsSyncDaemon,
+	vrrpInstanceLvsSyncInterface,
+	vrrpInstanceSyncGroup,
+	vrrpInstanceGarpDelay,
+	vrrpInstanceSmtpAlert,
+	vrrpInstanceNotifyExec,
+	vrrpInstanceScriptMaster,
+	vrrpInstanceScriptBackup,
+	vrrpInstanceScriptFault,
+	vrrpInstanceScriptStop,
+	vrrpInstanceScript
+	}
+    STATUS current
+    DESCRIPTION
+	"Conformance group for VRRP instances."
+    ::= { groups 6 }
 
 END

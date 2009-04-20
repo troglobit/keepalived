@@ -75,6 +75,39 @@
 #define VRRP_SNMP_SYNCGROUPMEMBER_GROUP 41
 #define VRRP_SNMP_SYNCGROUPMEMBER_INSTANCE 42
 #define VRRP_SNMP_SYNCGROUPMEMBER_NAME 43
+#define VRRP_SNMP_INSTANCE_INDEX 44
+#define VRRP_SNMP_INSTANCE_NAME 45
+#define VRRP_SNMP_INSTANCE_VIRTUALROUTERID 46
+#define VRRP_SNMP_INSTANCE_STATE 47
+#define VRRP_SNMP_INSTANCE_INITIALSTATE 48
+#define VRRP_SNMP_INSTANCE_WANTEDSTATE 49
+#define VRRP_SNMP_INSTANCE_BASEPRIORITY 50
+#define VRRP_SNMP_INSTANCE_EFFECTIVEPRIORITY 51
+#define VRRP_SNMP_INSTANCE_VIPSENABLED 52
+#define VRRP_SNMP_INSTANCE_PRIMARYINTERFACE 53
+#define VRRP_SNMP_INSTANCE_TRACKPRIMARYIF 54
+#define VRRP_SNMP_INSTANCE_ADVERTISEMENTSINT 55
+#define VRRP_SNMP_INSTANCE_PREEMPT 56
+#define VRRP_SNMP_INSTANCE_PREEMPTDELAY 57
+#define VRRP_SNMP_INSTANCE_AUTHTYPE 58
+#define VRRP_SNMP_INSTANCE_USELVSSYNCDAEMON 59
+#define VRRP_SNMP_INSTANCE_LVSSYNCINTERFACE 60
+#define VRRP_SNMP_INSTANCE_SYNCGROUP 61
+#define VRRP_SNMP_INSTANCE_GARPDELAY 62
+#define VRRP_SNMP_INSTANCE_SMTPALERT 63
+#define VRRP_SNMP_INSTANCE_NOTIFYEXEC 64
+#define VRRP_SNMP_INSTANCE_SCRIPTMASTER 65
+#define VRRP_SNMP_INSTANCE_SCRIPTBACKUP 66
+#define VRRP_SNMP_INSTANCE_SCRIPTFAULT 67
+#define VRRP_SNMP_INSTANCE_SCRIPTSTOP 68
+#define VRRP_SNMP_INSTANCE_SCRIPT 69
+
+/* Convert VRRP state to SNMP state */
+static unsigned long
+vrrp_snmp_state(int state)
+{
+	return (state<VRRP_STATE_GOTO_MASTER)?state:4;
+}
 
 static u_char*
 vrrp_snmp_scalar(struct variable *vp, oid *name, size_t *length,
@@ -277,7 +310,7 @@ vrrp_snmp_syncgroup(struct variable *vp, oid *name, size_t *length,
 		*var_len = strlen(group->gname);
 		return (u_char *)group->gname;
 	case VRRP_SNMP_SYNCGROUP_STATE:
-		long_ret = (group->state<VRRP_STATE_GOTO_MASTER)?group->state:4;
+		long_ret = vrrp_snmp_state(group->state);
 		return (u_char *)&long_ret;
 	case VRRP_SNMP_SYNCGROUP_SMTPALERT:
 		long_ret = group->smtp_alert?1:2;
@@ -387,6 +420,131 @@ vrrp_snmp_syncgroupmember(struct variable *vp, oid *name, size_t *length,
 	return (u_char*)binstance;
 }
 
+static u_char*
+vrrp_snmp_instance(struct variable *vp, oid *name, size_t *length,
+		   int exact, size_t *var_len, WriteMethod **write_method)
+{
+        static unsigned long long_ret;
+	vrrp_rt *rt;
+
+	if ((rt = (vrrp_rt *)snmp_header_list_table(vp, name, length, exact,
+						    var_len, write_method,
+						    vrrp_data->vrrp_sync_group)) == NULL)
+		return NULL;
+
+	switch (vp->magic) {
+	case VRRP_SNMP_INSTANCE_INDEX:
+                long_ret = name[*length - 1];
+		return (u_char *)&long_ret;
+	case VRRP_SNMP_INSTANCE_NAME:
+		*var_len = strlen(rt->iname);
+		return (u_char *)rt->iname;
+	case VRRP_SNMP_INSTANCE_VIRTUALROUTERID:
+		long_ret = rt->vrid;
+		return (u_char *)&long_ret;
+	case VRRP_SNMP_INSTANCE_STATE:
+		long_ret = vrrp_snmp_state(rt->state);
+		return (u_char *)&long_ret;
+	case VRRP_SNMP_INSTANCE_INITIALSTATE:
+		long_ret = vrrp_snmp_state(rt->init_state);
+		return (u_char *)&long_ret;
+	case VRRP_SNMP_INSTANCE_WANTEDSTATE:
+		long_ret = vrrp_snmp_state(rt->wantstate);
+		return (u_char *)&long_ret;
+	case VRRP_SNMP_INSTANCE_BASEPRIORITY:
+		long_ret = rt->base_priority;
+		return (u_char *)&long_ret;
+	case VRRP_SNMP_INSTANCE_EFFECTIVEPRIORITY:
+		long_ret = rt->effective_priority;
+		return (u_char *)&long_ret;
+	case VRRP_SNMP_INSTANCE_VIPSENABLED:
+		long_ret = rt->vipset?1:2;
+		return (u_char *)&long_ret;
+	case VRRP_SNMP_INSTANCE_PRIMARYINTERFACE:
+		*var_len = strlen(rt->ifp->ifname);
+		return (u_char *)&rt->ifp->ifname;
+	case VRRP_SNMP_INSTANCE_TRACKPRIMARYIF:
+		long_ret = rt->track_ifp?1:2;
+		return (u_char *)&long_ret;
+	case VRRP_SNMP_INSTANCE_ADVERTISEMENTSINT:
+		long_ret = rt->adver_int;
+		return (u_char *)&long_ret;
+	case VRRP_SNMP_INSTANCE_PREEMPT:
+		long_ret = rt->nopreempt?2:1;
+		return (u_char *)&long_ret;
+	case VRRP_SNMP_INSTANCE_PREEMPTDELAY:
+		long_ret = rt->preempt_delay;
+		return (u_char *)&long_ret;
+	case VRRP_SNMP_INSTANCE_AUTHTYPE:
+		long_ret = rt->auth_type;
+		return (u_char *)&long_ret;
+	case VRRP_SNMP_INSTANCE_USELVSSYNCDAEMON:
+		long_ret = (rt->lvs_syncd_if)?1:2;
+		return (u_char *)&long_ret;
+	case VRRP_SNMP_INSTANCE_LVSSYNCINTERFACE:
+		if (rt->lvs_syncd_if) {
+			*var_len = strlen(rt->lvs_syncd_if);
+			return (u_char *)rt->lvs_syncd_if;
+		}
+		break;
+	case VRRP_SNMP_INSTANCE_SYNCGROUP:
+		if (rt->sync) {
+			*var_len = strlen(rt->sync->gname);
+			return (u_char *)rt->sync->gname;
+		}
+		break;
+	case VRRP_SNMP_INSTANCE_GARPDELAY:
+		long_ret = rt->garp_delay;
+		return (u_char *)&long_ret;
+	case VRRP_SNMP_INSTANCE_SMTPALERT:
+		long_ret = rt->smtp_alert?1:2;
+		return (u_char *)&long_ret;
+	case VRRP_SNMP_INSTANCE_NOTIFYEXEC:
+		long_ret = rt->notify_exec?1:2;
+		return (u_char *)&long_ret;
+	case VRRP_SNMP_INSTANCE_SCRIPTMASTER:
+		if (rt->script_master) {
+			*var_len = strlen(rt->script_master);
+			return (u_char *)rt->script_master;
+		}
+		break;
+	case VRRP_SNMP_INSTANCE_SCRIPTBACKUP:
+		if (rt->script_backup) {
+			*var_len = strlen(rt->script_backup);
+			return (u_char *)rt->script_backup;
+		}
+		break;
+		long_ret = 1;
+		return (u_char *)&long_ret;
+	case VRRP_SNMP_INSTANCE_SCRIPTFAULT:
+		if (rt->script_fault) {
+			*var_len = strlen(rt->script_fault);
+			return (u_char *)rt->script_fault;
+		}
+		break;
+	case VRRP_SNMP_INSTANCE_SCRIPTSTOP:
+		if (rt->script_stop) {
+			*var_len = strlen(rt->script_stop);
+			return (u_char *)rt->script_stop;
+		}
+		break;
+	case VRRP_SNMP_INSTANCE_SCRIPT:
+		if (rt->script_master) {
+			*var_len = strlen(rt->script);
+			return (u_char *)rt->script;
+		}
+		break;
+	default:
+		return NULL;
+        }
+	/* If we are here, we asked for a non existent data. Try the
+	   next one. */
+	if (!exact && (name[*length-1] < MAX_SUBID))
+		return vrrp_snmp_instance(vp, name, length,
+					  exact, var_len, write_method);
+        return NULL;
+}
+
 static oid vrrp_oid[] = VRRP_OID;
 static struct variable8 vrrp_vars[] = {
 	/* vrrpKeepalivedVersion */
@@ -463,6 +621,57 @@ static struct variable8 vrrp_vars[] = {
 	/* vrrpSyncGroupMemberTable */
 	{VRRP_SNMP_SYNCGROUPMEMBER_NAME, ASN_OCTET_STR, RONLY,
 	 vrrp_snmp_syncgroupmember, 3, {6, 1, 3}},
+	/* vrrpInstanceTable */
+	{VRRP_SNMP_INSTANCE_NAME, ASN_OCTET_STR, RONLY,
+	 vrrp_snmp_instance, 3, {7, 1, 2}},
+	{VRRP_SNMP_INSTANCE_VIRTUALROUTERID, ASN_UNSIGNED, RONLY,
+	 vrrp_snmp_instance, 3, {7, 1, 3}},
+	{VRRP_SNMP_INSTANCE_STATE, ASN_INTEGER, RONLY,
+	 vrrp_snmp_instance, 3, {7, 1, 4}},
+	{VRRP_SNMP_INSTANCE_INITIALSTATE, ASN_INTEGER, RONLY,
+	 vrrp_snmp_instance, 3, {7, 1, 5}},
+	{VRRP_SNMP_INSTANCE_WANTEDSTATE, ASN_INTEGER, RONLY,
+	 vrrp_snmp_instance, 3, {7, 1, 6}},
+	{VRRP_SNMP_INSTANCE_BASEPRIORITY, ASN_INTEGER, RONLY,
+	 vrrp_snmp_instance, 3, {7, 1, 7}},
+	{VRRP_SNMP_INSTANCE_EFFECTIVEPRIORITY, ASN_INTEGER, RONLY,
+	 vrrp_snmp_instance, 3, {7, 1, 8}},
+	{VRRP_SNMP_INSTANCE_VIPSENABLED, ASN_INTEGER, RONLY,
+	 vrrp_snmp_instance, 3, {7, 1, 9}},
+	{VRRP_SNMP_INSTANCE_PRIMARYINTERFACE, ASN_OCTET_STR, RONLY,
+	 vrrp_snmp_instance, 3, {7, 1, 10}},
+	{VRRP_SNMP_INSTANCE_TRACKPRIMARYIF, ASN_INTEGER, RONLY,
+	 vrrp_snmp_instance, 3, {7, 1, 11}},
+	{VRRP_SNMP_INSTANCE_ADVERTISEMENTSINT, ASN_UNSIGNED, RONLY,
+	 vrrp_snmp_instance, 3, {7, 1, 12}},
+	{VRRP_SNMP_INSTANCE_PREEMPT, ASN_INTEGER, RONLY,
+	 vrrp_snmp_instance, 3, {7, 1, 13}},
+	{VRRP_SNMP_INSTANCE_PREEMPTDELAY, ASN_UNSIGNED, RONLY,
+	 vrrp_snmp_instance, 3, {7, 1, 14}},
+	{VRRP_SNMP_INSTANCE_AUTHTYPE, ASN_INTEGER, RONLY,
+	 vrrp_snmp_instance, 3, {7, 1, 15}},
+	{VRRP_SNMP_INSTANCE_USELVSSYNCDAEMON, ASN_INTEGER, RONLY,
+	 vrrp_snmp_instance, 3, {7, 1, 16}},
+	{VRRP_SNMP_INSTANCE_LVSSYNCINTERFACE, ASN_OCTET_STR, RONLY,
+	 vrrp_snmp_instance, 3, {7, 1, 17}},
+	{VRRP_SNMP_INSTANCE_SYNCGROUP, ASN_OCTET_STR, RONLY,
+	 vrrp_snmp_instance, 3, {7, 1, 18}},
+	{VRRP_SNMP_INSTANCE_GARPDELAY, ASN_UNSIGNED, RONLY,
+	 vrrp_snmp_instance, 3, {7, 1, 19}},
+	{VRRP_SNMP_INSTANCE_SMTPALERT, ASN_INTEGER, RONLY,
+	 vrrp_snmp_instance, 3, {7, 1, 20}},
+	{VRRP_SNMP_INSTANCE_NOTIFYEXEC, ASN_INTEGER, RONLY,
+	 vrrp_snmp_instance, 3, {7, 1, 21}},
+	{VRRP_SNMP_INSTANCE_SCRIPTMASTER, ASN_OCTET_STR, RONLY,
+	 vrrp_snmp_instance, 3, {7, 1, 22}},
+	{VRRP_SNMP_INSTANCE_SCRIPTBACKUP, ASN_OCTET_STR, RONLY,
+	 vrrp_snmp_instance, 3, {7, 1, 23}},
+	{VRRP_SNMP_INSTANCE_SCRIPTFAULT, ASN_OCTET_STR, RONLY,
+	 vrrp_snmp_instance, 3, {7, 1, 24}},
+	{VRRP_SNMP_INSTANCE_SCRIPTSTOP, ASN_OCTET_STR, RONLY,
+	 vrrp_snmp_instance, 3, {7, 1, 25}},
+	{VRRP_SNMP_INSTANCE_SCRIPT, ASN_OCTET_STR, RONLY,
+	 vrrp_snmp_instance, 3, {7, 1, 26}},
 };
 
 void
