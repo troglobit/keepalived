@@ -143,9 +143,6 @@ vrrp_snmp_script(struct variable *vp, oid *name, size_t *length,
 		return NULL;
 
 	switch (vp->magic) {
-	case VRRP_SNMP_SCRIPT_INDEX:
-                long_ret = name[*length - 1];
-		return (u_char *)&long_ret;
 	case VRRP_SNMP_SCRIPT_NAME:
 		*var_len = strlen(scr->sname);
 		return (u_char *)scr->sname;
@@ -180,9 +177,6 @@ vrrp_snmp_staticaddress(struct variable *vp, oid *name, size_t *length,
 		return NULL;
 
 	switch (vp->magic) {
-	case VRRP_SNMP_STATICADDRESS_INDEX:
-                long_ret = name[*length - 1];
-		return (u_char *)&long_ret;
 	case VRRP_SNMP_STATICADDRESS_ADDRESSTYPE:
 		long_ret = 1;	/* ipv4 only */
 		return (u_char *)&long_ret;		
@@ -237,9 +231,6 @@ vrrp_snmp_staticroute(struct variable *vp, oid *name, size_t *length,
 		return NULL;
 
 	switch (vp->magic) {
-	case VRRP_SNMP_STATICROUTE_INDEX:
-                long_ret = name[*length - 1];
-		return (u_char *)&long_ret;
 	case VRRP_SNMP_STATICROUTE_ADDRESSTYPE:
 		long_ret = 1;	/* IPv4 only */
 		return (u_char *)&long_ret;
@@ -307,9 +298,6 @@ vrrp_snmp_syncgroup(struct variable *vp, oid *name, size_t *length,
 		return NULL;
 
 	switch (vp->magic) {
-	case VRRP_SNMP_SYNCGROUP_INDEX:
-                long_ret = name[*length - 1];
-		return (u_char *)&long_ret;
 	case VRRP_SNMP_SYNCGROUP_NAME:
 		*var_len = strlen(group->gname);
 		return (u_char *)group->gname;
@@ -437,9 +425,6 @@ vrrp_snmp_instance(struct variable *vp, oid *name, size_t *length,
 		return NULL;
 
 	switch (vp->magic) {
-	case VRRP_SNMP_INSTANCE_INDEX:
-                long_ret = name[*length - 1];
-		return (u_char *)&long_ret;
 	case VRRP_SNMP_INSTANCE_NAME:
 		*var_len = strlen(rt->iname);
 		return (u_char *)rt->iname;
