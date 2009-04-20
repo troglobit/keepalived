@@ -428,7 +428,7 @@ vrrp_snmp_instance(struct variable *vp, oid *name, size_t *length,
 
 	if ((rt = (vrrp_rt *)snmp_header_list_table(vp, name, length, exact,
 						    var_len, write_method,
-						    vrrp_data->vrrp_sync_group)) == NULL)
+						    vrrp_data->vrrp)) == NULL)
 		return NULL;
 
 	switch (vp->magic) {
