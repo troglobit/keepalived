@@ -72,7 +72,6 @@
 #define VRRP_SNMP_SYNCGROUP_SCRIPTBACKUP 38
 #define VRRP_SNMP_SYNCGROUP_SCRIPTFAULT 39
 #define VRRP_SNMP_SYNCGROUP_SCRIPT 40
-#define VRRP_SNMP_SYNCGROUPMEMBER_GROUP 41
 #define VRRP_SNMP_SYNCGROUPMEMBER_INSTANCE 42
 #define VRRP_SNMP_SYNCGROUPMEMBER_NAME 43
 #define VRRP_SNMP_INSTANCE_INDEX 44
@@ -620,7 +619,7 @@ static struct variable8 vrrp_vars[] = {
 	 vrrp_snmp_syncgroup, 3, {5, 1, 9}},
 	/* vrrpSyncGroupMemberTable */
 	{VRRP_SNMP_SYNCGROUPMEMBER_NAME, ASN_OCTET_STR, RONLY,
-	 vrrp_snmp_syncgroupmember, 3, {6, 1, 3}},
+	 vrrp_snmp_syncgroupmember, 3, {6, 1, 2}},
 	/* vrrpInstanceTable */
 	{VRRP_SNMP_INSTANCE_NAME, ASN_OCTET_STR, RONLY,
 	 vrrp_snmp_instance, 3, {7, 1, 2}},

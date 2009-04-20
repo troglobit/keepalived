@@ -524,22 +524,13 @@ vrrpSyncGroupMemberEntry OBJECT-TYPE
     STATUS current
     DESCRIPTION
         "Information describing a member of a sync group"
-    INDEX { vrrpSyncGroupMemberGroupIndex, vrrpSyncGroupMemberInstanceIndex }
+    INDEX { vrrpSyncGroupIndex, vrrpSyncGroupMemberInstanceIndex }
     ::= { vrrpSyncGroupMemberTable 1 }
 
 VrrpSyncGroupMemberEntry ::= SEQUENCE {
-	vrrpSyncGroupMemberGroupIndex Integer32,
 	vrrpSyncGroupMemberInstanceIndex Integer32,
 	vrrpSyncGroupMemberName DisplayString
 }
-
-vrrpSyncGroupMemberGroupIndex OBJECT-TYPE
-    SYNTAX Integer32 (1..2147483647)
-    MAX-ACCESS not-accessible
-    STATUS current
-    DESCRIPTION
-	"Index of the synchronisation group, as in vrrpSyncGroup table."
-    ::= { vrrpSyncGroupMemberEntry 1 }
 
 vrrpSyncGroupMemberInstanceIndex OBJECT-TYPE
     SYNTAX Integer32 (1..2147483647)
@@ -550,7 +541,7 @@ vrrpSyncGroupMemberInstanceIndex OBJECT-TYPE
 	 There is no relation with this index and the index of the
 	 corresponding instance in vrrpInstanceTable. Use the name
 	 to find out the corresponding instance."
-    ::= { vrrpSyncGroupMemberEntry 2 }
+    ::= { vrrpSyncGroupMemberEntry 1 }
 
 vrrpSyncGroupMemberName OBJECT-TYPE
     SYNTAX DisplayString
@@ -558,7 +549,7 @@ vrrpSyncGroupMemberName OBJECT-TYPE
     STATUS current
     DESCRIPTION
 	"Name of the instance contained in the synchronisation group."
-    ::= { vrrpSyncGroupMemberEntry 3 }
+    ::= { vrrpSyncGroupMemberEntry 2 }
 
 -- VRRP instances
 -- see vrrp.h
