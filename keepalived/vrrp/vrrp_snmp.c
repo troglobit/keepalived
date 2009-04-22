@@ -255,6 +255,8 @@ vrrp_header_ar_table(struct variable *vp, oid *name, size_t *length,
 		default:
 			return NULL; /* Big problem! */
 		}
+		if (target_len && (curinstance < target[0]))
+			continue; /* Optimization: cannot be part of our set */
 		if (LIST_ISEMPTY(l2)) continue;
 		for (e2 = LIST_HEAD(l2); e2; ELEMENT_NEXT(e2)) {
 			el = ELEMENT_DATA(e2);
@@ -273,6 +275,11 @@ vrrp_header_ar_table(struct variable *vp, oid *name, size_t *length,
 				memcpy(best, current, sizeof(oid) * 2);
 				bel = el;
 				*state = curstate;
+				/* Optimization: (e1,e2) is strictly
+				   increasing, this is the lower
+				   element of our target set. */
+				nextstate = HEADER_STATE_END;
+				break;
 			}
 		}
 	}
@@ -509,6 +516,11 @@ vrrp_snmp_syncgroupmember(struct variable *vp, oid *name, size_t *length,
 	for (e = LIST_HEAD(vrrp_data->vrrp_sync_group); e; ELEMENT_NEXT(e)) {
 		group = ELEMENT_DATA(e);
 		curgroup++;
+		if (target_len && (curgroup < target[0]))
+			continue; /* Optimization: cannot be part of our set */
+		if (binstance)
+			break; /* Optimization: cannot be the lower
+				  anymore, see break below */
 		vector_foreach_slot(group->iname, instance, curinstance) {
 			/* We build our current match */
 			current[0] = curgroup;
@@ -528,6 +540,10 @@ vrrp_snmp_syncgroupmember(struct variable *vp, oid *name, size_t *length,
 				/* This is our best match */
 				memcpy(best, current, sizeof(oid) * 2);
 				binstance = instance;
+				/* (current[0],current[1]) are
+				   strictly increasing, this is our
+				   lower element of our set */
+				break;
 			}
 		}
 	}
@@ -697,6 +713,10 @@ vrrp_snmp_trackedinterface(struct variable *vp, oid *name, size_t *length,
 	for (e1 = LIST_HEAD(vrrp_data->vrrp); e1; ELEMENT_NEXT(e1)) {
 		instance = ELEMENT_DATA(e1);
 		curinstance++;
+		if (target_len && (curinstance < target[0]))
+			continue; /* Optimization: cannot be part of our set */
+		if (target_len && bifp && (curinstance > target[0] + 1))
+			break; /* Optimization: cannot be the lower anymore */
 		if (LIST_ISEMPTY(instance->track_ifp))
 			continue;
 		for (e2 = LIST_HEAD(instance->track_ifp); e2; ELEMENT_NEXT(e2)) {
@@ -776,6 +796,10 @@ vrrp_snmp_trackedscript(struct variable *vp, oid *name, size_t *length,
 	for (e1 = LIST_HEAD(vrrp_data->vrrp); e1; ELEMENT_NEXT(e1)) {
 		instance = ELEMENT_DATA(e1);
 		curinstance++;
+		if (target_len && (curinstance < target[0]))
+			continue; /* Optimization: cannot be part of our set */
+		if (bscr)
+			break; /* Optimization, see below */
 		if (LIST_ISEMPTY(instance->track_script))
 			continue;
 		curscr = 0;
@@ -800,6 +824,10 @@ vrrp_snmp_trackedscript(struct variable *vp, oid *name, size_t *length,
 				/* This is our best match */
 				memcpy(best, current, sizeof(oid) * 2);
 				bscr = scr;
+				/* (current[0],current[1]) are
+				   strictly increasing, this is our
+				   lower element of our set */
+				break;
 			}
 		}
 	}
