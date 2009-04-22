@@ -352,6 +352,7 @@ vrrpInstanceTrackPrimaryIf OBJECT-TYPE
 
 vrrpInstanceAdvertisementsInt OBJECT-TYPE
     SYNTAX Unsigned32
+    UNITS "seconds"
     MAX-ACCESS read-only
     STATUS current
     DESCRIPTION
@@ -368,6 +369,7 @@ vrrpInstancePreempt OBJECT-TYPE
 
 vrrpInstancePreemptDelay OBJECT-TYPE
     SYNTAX Unsigned32
+    UNITS "seconds"
     MAX-ACCESS read-only
     STATUS current
     DESCRIPTION
@@ -413,6 +415,7 @@ vrrpInstanceSyncGroup OBJECT-TYPE
 
 vrrpInstanceGarpDelay OBJECT-TYPE
     SYNTAX Unsigned32
+    UNITS "seconds"
     MAX-ACCESS read-only
     STATUS current
     DESCRIPTION
@@ -891,10 +894,11 @@ vrrpScriptCommand OBJECT-TYPE
 
 vrrpScriptInterval OBJECT-TYPE
     SYNTAX Integer32
+    UNITS "seconds"
     MAX-ACCESS read-only
     STATUS current
     DESCRIPTION
-        "Interval in seconds between two runs of the script."
+        "Interval between two runs of the script."
     ::= { vrrpScriptEntry 4 }
 
 vrrpScriptWeight OBJECT-TYPE

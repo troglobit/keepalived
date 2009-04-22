@@ -146,7 +146,7 @@ vrrp_snmp_script(struct variable *vp, oid *name, size_t *length,
 		*var_len = strlen(scr->script);
 		return (u_char *)scr->script;
 	case VRRP_SNMP_SCRIPT_INTERVAL:
-		long_ret = scr->interval;
+		long_ret = scr->interval / TIMER_HZ;
 		return (u_char *)&long_ret;
 	case VRRP_SNMP_SCRIPT_WEIGHT:
 		long_ret = scr->weight;
@@ -611,13 +611,13 @@ vrrp_snmp_instance(struct variable *vp, oid *name, size_t *length,
 		long_ret = rt->track_ifp?1:2;
 		return (u_char *)&long_ret;
 	case VRRP_SNMP_INSTANCE_ADVERTISEMENTSINT:
-		long_ret = rt->adver_int;
+		long_ret = rt->adver_int / TIMER_HZ;
 		return (u_char *)&long_ret;
 	case VRRP_SNMP_INSTANCE_PREEMPT:
 		long_ret = rt->nopreempt?2:1;
 		return (u_char *)&long_ret;
 	case VRRP_SNMP_INSTANCE_PREEMPTDELAY:
-		long_ret = rt->preempt_delay;
+		long_ret = rt->preempt_delay / TIMER_HZ;
 		return (u_char *)&long_ret;
 	case VRRP_SNMP_INSTANCE_AUTHTYPE:
 		long_ret = rt->auth_type;
@@ -638,7 +638,7 @@ vrrp_snmp_instance(struct variable *vp, oid *name, size_t *length,
 		}
 		break;
 	case VRRP_SNMP_INSTANCE_GARPDELAY:
-		long_ret = rt->garp_delay;
+		long_ret = rt->garp_delay / TIMER_HZ;
 		return (u_char *)&long_ret;
 	case VRRP_SNMP_INSTANCE_SMTPALERT:
 		long_ret = rt->smtp_alert?1:2;
