@@ -17,7 +17,7 @@ IMPORTS
     	FROM INET-ADDRESS-MIB
     InterfaceIndex, ifIndex
     	FROM IF-MIB
-    DisplayString, TruthValue, TEXTUAL-CONVENTION
+    DisplayString, TEXTUAL-CONVENTION
         FROM SNMPv2-TC;
 
 keepalived MODULE-IDENTITY
@@ -85,8 +85,8 @@ VrrpSyncGroupEntry ::= SEQUENCE {
 	vrrpSyncGroupIndex Integer32,
 	vrrpSyncGroupName DisplayString,
 	vrrpSyncGroupState VrrpState,
-	vrrpSyncGroupSmtpAlert TruthValue,
-	vrrpSyncGroupNotifyExec TruthValue,
+	vrrpSyncGroupSmtpAlert INTEGER,
+	vrrpSyncGroupNotifyExec INTEGER,
 	vrrpSyncGroupScriptMaster DisplayString,
 	vrrpSyncGroupScriptBackup DisplayString,
 	vrrpSyncGroupScriptFault DisplayString,
@@ -118,7 +118,7 @@ vrrpSyncGroupState OBJECT-TYPE
     ::= {vrrpSyncGroupEntry 3 }
 
 vrrpSyncGroupSmtpAlert OBJECT-TYPE
-    SYNTAX TruthValue
+    SYNTAX INTEGER { enabled(1), disabled(2) }
     MAX-ACCESS read-only
     STATUS current
     DESCRIPTION
@@ -126,7 +126,7 @@ vrrpSyncGroupSmtpAlert OBJECT-TYPE
     ::= {vrrpSyncGroupEntry 4 }
 
 vrrpSyncGroupNotifyExec OBJECT-TYPE
-    SYNTAX TruthValue
+    SYNTAX INTEGER { enabled(1), disabled(2) }
     MAX-ACCESS read-only
     STATUS current
     DESCRIPTION
@@ -235,19 +235,19 @@ VrrpInstanceEntry ::= SEQUENCE {
 	vrrpInstanceWantedState VrrpState,
 	vrrpInstanceBasePriority Integer32,
 	vrrpInstanceEffectivePriority Integer32,
-	vrrpInstanceVipsEnabled TruthValue,
+	vrrpInstanceVipsStatus INTEGER,
 	vrrpInstancePrimaryInterface DisplayString,
-	vrrpInstanceTrackPrimaryIf TruthValue,
+	vrrpInstanceTrackPrimaryIf INTEGER,
 	vrrpInstanceAdvertisementsInt Unsigned32,
-	vrrpInstancePreempt TruthValue,
+	vrrpInstancePreempt INTEGER,
 	vrrpInstancePreemptDelay Unsigned32,
 	vrrpInstanceAuthType INTEGER,
-	vrrpInstanceUseLvsSyncDaemon TruthValue,
+	vrrpInstanceLvsSyncDaemon INTEGER,
 	vrrpInstanceLvsSyncInterface DisplayString,
 	vrrpInstanceSyncGroup DisplayString,
 	vrrpInstanceGarpDelay Unsigned32,
-	vrrpInstanceSmtpAlert TruthValue,
-	vrrpInstanceNotifyExec TruthValue,
+	vrrpInstanceSmtpAlert INTEGER,
+	vrrpInstanceNotifyExec INTEGER,
 	vrrpInstanceScriptMaster DisplayString,
 	vrrpInstanceScriptBackup DisplayString,
 	vrrpInstanceScriptFault DisplayString,
@@ -326,8 +326,8 @@ vrrpInstanceEffectivePriority OBJECT-TYPE
 	 from the base priority."
     ::= { vrrpInstanceEntry 8 }
 
-vrrpInstanceVipsEnabled OBJECT-TYPE
-    SYNTAX TruthValue
+vrrpInstanceVipsStatus OBJECT-TYPE
+    SYNTAX INTEGER { allSet(1), notAllSet(2) }
     MAX-ACCESS read-only
     STATUS current
     DESCRIPTION
@@ -343,7 +343,7 @@ vrrpInstancePrimaryInterface OBJECT-TYPE
     ::= { vrrpInstanceEntry 10 }
 
 vrrpInstanceTrackPrimaryIf OBJECT-TYPE
-    SYNTAX TruthValue
+    SYNTAX INTEGER { tracked(1), notTracked(2) }
     MAX-ACCESS read-only
     STATUS current
     DESCRIPTION
@@ -359,7 +359,7 @@ vrrpInstanceAdvertisementsInt OBJECT-TYPE
     ::= { vrrpInstanceEntry 12 }
 
 vrrpInstancePreempt OBJECT-TYPE
-    SYNTAX TruthValue
+    SYNTAX INTEGER { preempt(1), noPreempt(2) }
     MAX-ACCESS read-only
     STATUS current
     DESCRIPTION
@@ -387,8 +387,8 @@ vrrpInstanceAuthType OBJECT-TYPE
 	"Authentication method to authenticate other peers."
     ::= { vrrpInstanceEntry 15 }
 
-vrrpInstanceUseLvsSyncDaemon OBJECT-TYPE
-    SYNTAX TruthValue
+vrrpInstanceLvsSyncDaemon OBJECT-TYPE
+    SYNTAX INTEGER { enabled(1), disabled(2) }
     MAX-ACCESS read-only
     STATUS current
     DESCRIPTION
@@ -420,7 +420,7 @@ vrrpInstanceGarpDelay OBJECT-TYPE
     ::= { vrrpInstanceEntry 19 }
 
 vrrpInstanceSmtpAlert OBJECT-TYPE
-    SYNTAX TruthValue
+    SYNTAX INTEGER { enabled(1), disabled(2) }
     MAX-ACCESS read-only
     STATUS current
     DESCRIPTION
@@ -428,7 +428,7 @@ vrrpInstanceSmtpAlert OBJECT-TYPE
     ::= { vrrpInstanceEntry 20 }
 
 vrrpInstanceNotifyExec OBJECT-TYPE
-    SYNTAX TruthValue
+    SYNTAX INTEGER { enabled(1), disabled(2) }
     MAX-ACCESS read-only
     STATUS current
     DESCRIPTION
@@ -594,8 +594,8 @@ VrrpAddressEntry ::= SEQUENCE {
 	vrrpAddressIfIndex InterfaceIndex,
 	vrrpAddressIfName DisplayString,
 	vrrpAddressIfAlias DisplayString,
-	vrrpAddressIsSet TruthValue,
-	vrrpAddressIsAdvertised TruthValue
+	vrrpAddressStatus INTEGER,
+	vrrpAddressAdvertising INTEGER
 }
 
 vrrpAddressIndex OBJECT-TYPE
@@ -670,20 +670,20 @@ vrrpAddressIfAlias OBJECT-TYPE
 	"Alias name of the interface."
     ::= { vrrpAddressEntry 9 }
 
-vrrpAddressIsSet OBJECT-TYPE
-    SYNTAX TruthValue
+vrrpAddressStatus OBJECT-TYPE
+    SYNTAX INTEGER { set(1), unset(2) }
     MAX-ACCESS read-only
     STATUS current
     DESCRIPTION
-	"true(1) if the address is set, false(0) otherwise."
+	"Is the IP address set?"
     ::= { vrrpAddressEntry 10 }
 
-vrrpAddressIsAdvertised OBJECT-TYPE
-    SYNTAX TruthValue
+vrrpAddressAdvertising OBJECT-TYPE
+    SYNTAX INTEGER { advertised(1), notAdvertised(2) }
     MAX-ACCESS read-only
     STATUS current
     DESCRIPTION
-	"true(1) if the address is advertised through VRRP, false(0) otherwise."
+	"Status of VRRP advertising for this IP address."
     ::= { vrrpAddressEntry 11 }
 
 -- Routes
@@ -717,11 +717,11 @@ VrrpRouteEntry ::= SEQUENCE {
 	vrrpRouteSource InetAddress,
 	vrrpRouteMetric Unsigned32,
 	vrrpRouteScope InetScopeType,
-	vrrpRouteBlackhole TruthValue,
+	vrrpRouteType INTEGER,
 	vrrpRouteIfIndex InterfaceIndex,
 	vrrpRouteIfName DisplayString,
 	vrrpRouteRoutingTable Unsigned32,
-	vrrpRouteIsSet TruthValue
+	vrrpRouteStatus INTEGER
 }
 
 vrrpRouteIndex OBJECT-TYPE
@@ -796,12 +796,12 @@ vrrpRouteScope OBJECT-TYPE
 	"Scope of this route."
     ::= { vrrpRouteEntry 9 }
 
-vrrpRouteBlackhole OBJECT-TYPE
-    SYNTAX TruthValue
+vrrpRouteType OBJECT-TYPE
+    SYNTAX INTEGER { normal(1), ecmp(2), blackhole(3) }
     MAX-ACCESS read-only
     STATUS current
     DESCRIPTION
-	"Is this route a blackhole?"
+	"Kind of route."
     ::= { vrrpRouteEntry 10 }
 
 vrrpRouteIfIndex OBJECT-TYPE
@@ -828,8 +828,8 @@ vrrpRouteRoutingTable OBJECT-TYPE
 	"Routing table where to route should be inserted."
     ::= { vrrpRouteEntry 13 }
 
-vrrpRouteIsSet OBJECT-TYPE
-    SYNTAX TruthValue
+vrrpRouteStatus OBJECT-TYPE
+    SYNTAX INTEGER { set(1), unset(2) }
     MAX-ACCESS read-only
     STATUS current
     DESCRIPTION
@@ -974,14 +974,14 @@ vrrpInstanceGroup OBJECT-GROUP
 	vrrpInstanceWantedState,
 	vrrpInstanceBasePriority,
 	vrrpInstanceEffectivePriority,
-	vrrpInstanceVipsEnabled,
+	vrrpInstanceVipsStatus,
 	vrrpInstancePrimaryInterface,
 	vrrpInstanceTrackPrimaryIf,
 	vrrpInstanceAdvertisementsInt,
 	vrrpInstancePreempt,
 	vrrpInstancePreemptDelay,
 	vrrpInstanceAuthType,
-	vrrpInstanceUseLvsSyncDaemon,
+	vrrpInstanceLvsSyncDaemon,
 	vrrpInstanceLvsSyncInterface,
 	vrrpInstanceSyncGroup,
 	vrrpInstanceGarpDelay,
@@ -1004,8 +1004,8 @@ vrrpInstanceGroup OBJECT-GROUP
 	vrrpAddressIfIndex,
 	vrrpAddressIfName,
 	vrrpAddressIfAlias,
-	vrrpAddressIsSet,
-	vrrpAddressIsAdvertised,
+	vrrpAddressStatus,
+	vrrpAddressAdvertising,
         vrrpRouteAddressType,
 	vrrpRouteDestination,
 	vrrpRouteDestinationMask,
@@ -1014,11 +1014,11 @@ vrrpInstanceGroup OBJECT-GROUP
 	vrrpRouteSource,
 	vrrpRouteMetric,
 	vrrpRouteScope,
-	vrrpRouteBlackhole,
+	vrrpRouteType,
 	vrrpRouteIfIndex,
 	vrrpRouteIfName,
 	vrrpRouteRoutingTable,
-	vrrpRouteIsSet
+	vrrpRouteStatus
 	}
     STATUS current
     DESCRIPTION

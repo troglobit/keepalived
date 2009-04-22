@@ -57,7 +57,7 @@
 #define VRRP_SNMP_ROUTE_SOURCE 24
 #define VRRP_SNMP_ROUTE_METRIC 25
 #define VRRP_SNMP_ROUTE_SCOPE 26
-#define VRRP_SNMP_ROUTE_BLACKHOLE 27
+#define VRRP_SNMP_ROUTE_TYPE 27
 #define VRRP_SNMP_ROUTE_IFINDEX 28
 #define VRRP_SNMP_ROUTE_IFNAME 29
 #define VRRP_SNMP_ROUTE_ROUTINGTABLE 30
@@ -383,8 +383,11 @@ vrrp_snmp_route(struct variable *vp, oid *name, size_t *length,
 		*var_len = 4;
 		return (u_char *)&route->gw;
 	case VRRP_SNMP_ROUTE_SECONDARYGATEWAY:
-		*var_len = 4;
-		return (u_char *)&route->gw2;
+		if (route->gw2) {
+			*var_len = 4;
+			return (u_char *)&route->gw2;
+		}
+		break;
 	case VRRP_SNMP_ROUTE_SOURCE:
 		*var_len = 4;
 		return (u_char *)&route->src;
@@ -394,8 +397,12 @@ vrrp_snmp_route(struct variable *vp, oid *name, size_t *length,
 	case VRRP_SNMP_ROUTE_SCOPE:
 		long_ret = snmp_scope(route->scope);
 		return (u_char *)&long_ret;
-	case VRRP_SNMP_ROUTE_BLACKHOLE:
-		long_ret = (route->blackhole)?1:2;
+	case VRRP_SNMP_ROUTE_TYPE:
+		if (route->blackhole)
+			long_ret = 3;
+		else if (route->gw2)
+			long_ret = 2;
+		else long_ret = 1;
 		return (u_char *)&long_ret;
 	case VRRP_SNMP_ROUTE_IFINDEX:
 		long_ret = route->index;
@@ -975,7 +982,7 @@ static struct variable8 vrrp_vars[] = {
 	 vrrp_snmp_route, 3, {8, 1, 8}},
 	{VRRP_SNMP_ROUTE_SCOPE, ASN_INTEGER, RONLY,
 	 vrrp_snmp_route, 3, {8, 1, 9}},
-	{VRRP_SNMP_ROUTE_BLACKHOLE, ASN_INTEGER, RONLY,
+	{VRRP_SNMP_ROUTE_TYPE, ASN_INTEGER, RONLY,
 	 vrrp_snmp_route, 3, {8, 1, 10}},
 	{VRRP_SNMP_ROUTE_IFINDEX, ASN_INTEGER, RONLY,
 	 vrrp_snmp_route, 3, {8, 1, 11}},
