@@ -77,4 +77,4 @@ vrrp_iproute.o: vrrp_iproute.c ../include/vrrp_iproute.h ../include/vrrp_netlink
 vrrp_ipsecah.o: vrrp_ipsecah.c ../include/vrrp_ipsecah.h
 vrrp_snmp.o: vrrp_snmp.c ../include/vrrp_snmp.h ../include/vrrp_track.h \
   ../include/vrrp_data.h ../include/vrrp_ipaddress.h ../include/vrrp_iproute.h \
-  ../include/vrrp.h ../../lib/vector.h
+  ../include/vrrp.h ../../lib/vector.h ../../lib/list.h

@@ -61,351 +61,6 @@ vrrpKeepalivedVersion OBJECT-TYPE
 	"Version of keepalived"
     ::= { vrrp 1 }
 
--- VRRP scripts
--- see vrrp_track.h
-
-vrrpScriptTable OBJECT-TYPE
-    SYNTAX SEQUENCE OF VrrpScriptEntry
-    MAX-ACCESS not-accessible
-    STATUS current
-    DESCRIPTION
-        "Table of VRRP scripts"
-    ::= { vrrp 2 }
-
-vrrpScriptEntry OBJECT-TYPE
-    SYNTAX VrrpScriptEntry
-    MAX-ACCESS not-accessible
-    STATUS current
-    DESCRIPTION
-        "Information describing a VRRP script"
-    INDEX { vrrpScriptIndex }
-    ::= { vrrpScriptTable 1 }
-
-VrrpScriptEntry ::= SEQUENCE {
-	vrrpScriptIndex Integer32,
-        vrrpScriptName DisplayString,
-        vrrpScriptCommand DisplayString,
-        vrrpScriptInterval Integer32,
-        vrrpScriptWeight Integer32,
-        vrrpScriptResult INTEGER
-}
-
-vrrpScriptIndex OBJECT-TYPE
-    SYNTAX Integer32 (1..2147483647)
-    MAX-ACCESS not-accessible
-    STATUS current
-    DESCRIPTION
-	"Script index."
-    ::= { vrrpScriptEntry 1 }
-
-vrrpScriptName OBJECT-TYPE
-    SYNTAX DisplayString
-    MAX-ACCESS read-only
-    STATUS current
-    DESCRIPTION
-        "Symbolic name of the script."
-    ::= { vrrpScriptEntry 2 }
-
-vrrpScriptCommand OBJECT-TYPE
-    SYNTAX DisplayString
-    MAX-ACCESS read-only
-    STATUS current
-    DESCRIPTION
-        "Command executed when running the script."
-    ::= { vrrpScriptEntry 3 }
-
-vrrpScriptInterval OBJECT-TYPE
-    SYNTAX Integer32
-    MAX-ACCESS read-only
-    STATUS current
-    DESCRIPTION
-        "Interval in seconds between two runs of the script."
-    ::= { vrrpScriptEntry 4 }
-
-vrrpScriptWeight OBJECT-TYPE
-    SYNTAX Integer32
-    MAX-ACCESS read-only
-    STATUS current
-    DESCRIPTION
-        "Weight of the script if successful."
-    ::= { vrrpScriptEntry 5 }
-
-vrrpScriptResult OBJECT-TYPE
-    SYNTAX INTEGER {
-        disabled(0),
-        init(1),
-        none(2),
-        good(3),
-        initgood(4)
-           }
-    MAX-ACCESS read-only
-    STATUS current
-    DESCRIPTION
-        "Current status of the script."
-    ::= { vrrpScriptEntry 6 }
-
--- Static ip addresses
--- see vrrp_ipaddress.h
-
-vrrpStaticAddressTable OBJECT-TYPE
-    SYNTAX SEQUENCE OF VrrpStaticAddressEntry
-    MAX-ACCESS not-accessible
-    STATUS current
-    DESCRIPTION
-        "Table of static addresses"
-    ::= { vrrp 3 }
-
-vrrpStaticAddressEntry OBJECT-TYPE
-    SYNTAX VrrpStaticAddressEntry
-    MAX-ACCESS not-accessible
-    STATUS current
-    DESCRIPTION
-        "Information describing a static address"
-    INDEX { vrrpStaticAddressIndex }
-    ::= { vrrpStaticAddressTable 1 }
-
-VrrpStaticAddressEntry ::= SEQUENCE {
-	vrrpStaticAddressIndex Integer32,
-        vrrpStaticAddressType InetAddressType,
-	vrrpStaticAddressValue InetAddress,
-	vrrpStaticAddressBroadcast InetAddress,
-	vrrpStaticAddressMask InetAddressPrefixLength,
-	vrrpStaticAddressScope InetScopeType,
-	vrrpStaticAddressIfIndex InterfaceIndex,
-	vrrpStaticAddressIfName DisplayString,
-	vrrpStaticAddressIfAlias DisplayString,
-	vrrpStaticAddressIsSet TruthValue
-}
-
-vrrpStaticAddressIndex OBJECT-TYPE
-    SYNTAX Integer32 (1..2147483647)
-    MAX-ACCESS not-accessible
-    STATUS current
-    DESCRIPTION
-	"Static address index."
-    ::= { vrrpStaticAddressEntry 1 }
-
-vrrpStaticAddressType OBJECT-TYPE
-    SYNTAX InetAddressType
-    MAX-ACCESS read-only
-    STATUS current
-    DESCRIPTION
-	"A value that represents a type of Internet address."
-    ::= { vrrpStaticAddressEntry 2 }
-
-vrrpStaticAddressValue OBJECT-TYPE
-    SYNTAX InetAddress
-    MAX-ACCESS read-only
-    STATUS current
-    DESCRIPTION
-	"Actual static ip address."
-    ::= { vrrpStaticAddressEntry 3 }
-
-vrrpStaticAddressBroadcast OBJECT-TYPE
-    SYNTAX InetAddress
-    MAX-ACCESS read-only
-    STATUS current
-    DESCRIPTION
-	"Broadcast address associated with the static address."
-    ::= { vrrpStaticAddressEntry 4 }
-
-vrrpStaticAddressMask OBJECT-TYPE
-    SYNTAX InetAddressPrefixLength
-    MAX-ACCESS read-only
-    STATUS current
-    DESCRIPTION
-	"Static address mask."
-    ::= { vrrpStaticAddressEntry 5 }
-
-vrrpStaticAddressScope OBJECT-TYPE
-    SYNTAX InetScopeType
-    MAX-ACCESS read-only
-    STATUS current
-    DESCRIPTION
-	"Static address scope."
-    ::= { vrrpStaticAddressEntry 6 }
-
-vrrpStaticAddressIfIndex OBJECT-TYPE
-    SYNTAX InterfaceIndex
-    MAX-ACCESS read-only
-    STATUS current
-    DESCRIPTION
-	"Index of the interface to which the static address is linked to."
-    ::= { vrrpStaticAddressEntry 7 }
-
-vrrpStaticAddressIfName OBJECT-TYPE
-    SYNTAX DisplayString
-    MAX-ACCESS read-only
-    STATUS current
-    DESCRIPTION
-	"Name of the interface to which the static address is linked to."
-    ::= { vrrpStaticAddressEntry 8 }
-
-vrrpStaticAddressIfAlias OBJECT-TYPE
-    SYNTAX DisplayString
-    MAX-ACCESS read-only
-    STATUS current
-    DESCRIPTION
-	"Alias name of the interface."
-    ::= { vrrpStaticAddressEntry 9 }
-
-vrrpStaticAddressIsSet OBJECT-TYPE
-    SYNTAX TruthValue
-    MAX-ACCESS read-only
-    STATUS current
-    DESCRIPTION
-	"true(1) if the address is set, false(0) otherwise."
-    ::= { vrrpStaticAddressEntry 10 }
-
--- Static routes
--- see vrrp_iproute.h
-
-vrrpStaticRouteTable OBJECT-TYPE
-    SYNTAX SEQUENCE OF VrrpStaticRouteEntry
-    MAX-ACCESS not-accessible
-    STATUS current
-    DESCRIPTION
-        "Table of static routes"
-    ::= { vrrp 4 }
-
-vrrpStaticRouteEntry OBJECT-TYPE
-    SYNTAX VrrpStaticRouteEntry
-    MAX-ACCESS not-accessible
-    STATUS current
-    DESCRIPTION
-        "Information describing a static route"
-    INDEX { vrrpStaticRouteIndex }
-    ::= { vrrpStaticRouteTable 1 }
-
-VrrpStaticRouteEntry ::= SEQUENCE {
-	vrrpStaticRouteIndex Integer32,
-        vrrpStaticRouteAddressType InetAddressType,
-	vrrpStaticRouteDestination InetAddress,
-	vrrpStaticRouteDestinationMask InetAddressPrefixLength,
-	vrrpStaticRouteGateway InetAddress,
-	vrrpStaticRouteSecondaryGateway InetAddress,
-	vrrpStaticRouteSource InetAddress,
-	vrrpStaticRouteMetric Unsigned32,
-	vrrpStaticRouteScope InetScopeType,
-	vrrpStaticRouteBlackhole TruthValue,
-	vrrpStaticRouteIfIndex InterfaceIndex,
-	vrrpStaticRouteIfName DisplayString,
-	vrrpStaticRouteRoutingTable Unsigned32,
-	vrrpStaticRouteIsSet TruthValue
-}
-
-vrrpStaticRouteIndex OBJECT-TYPE
-    SYNTAX Integer32 (1..2147483647)
-    MAX-ACCESS not-accessible
-    STATUS current
-    DESCRIPTION
-	"Static route index."
-    ::= { vrrpStaticRouteEntry 1 }
-
-vrrpStaticRouteAddressType OBJECT-TYPE
-    SYNTAX InetAddressType
-    MAX-ACCESS read-only
-    STATUS current
-    DESCRIPTION
-	"Static route type of internet address."
-    ::= { vrrpStaticRouteEntry 2 }
-
-vrrpStaticRouteDestination OBJECT-TYPE
-    SYNTAX InetAddress
-    MAX-ACCESS read-only
-    STATUS current
-    DESCRIPTION
-	"Static route destination."
-    ::= { vrrpStaticRouteEntry 3 }
-
-vrrpStaticRouteDestinationMask OBJECT-TYPE
-    SYNTAX InetAddressPrefixLength
-    MAX-ACCESS read-only
-    STATUS current
-    DESCRIPTION
-	"Static route destination mask."
-    ::= { vrrpStaticRouteEntry 4 }
-
-vrrpStaticRouteGateway OBJECT-TYPE
-    SYNTAX InetAddress
-    MAX-ACCESS read-only
-    STATUS current
-    DESCRIPTION
-	"Gateway for the given destination."
-    ::= { vrrpStaticRouteEntry 5 }
-
-vrrpStaticRouteSecondaryGateway OBJECT-TYPE
-    SYNTAX InetAddress
-    MAX-ACCESS read-only
-    STATUS current
-    DESCRIPTION
-	"An optional second gateway for the given destination."
-    ::= { vrrpStaticRouteEntry 6 }
-
-vrrpStaticRouteSource OBJECT-TYPE
-    SYNTAX InetAddress
-    MAX-ACCESS read-only
-    STATUS current
-    DESCRIPTION
-	"Which source IP address to use with this route."
-    ::= { vrrpStaticRouteEntry 7 }
-
-vrrpStaticRouteMetric OBJECT-TYPE
-    SYNTAX Unsigned32
-    MAX-ACCESS read-only
-    STATUS current
-    DESCRIPTION
-	"Metric of this static route."
-    ::= { vrrpStaticRouteEntry 8 }
-
-vrrpStaticRouteScope OBJECT-TYPE
-    SYNTAX InetScopeType
-    MAX-ACCESS read-only
-    STATUS current
-    DESCRIPTION
-	"Scope of this route."
-    ::= { vrrpStaticRouteEntry 9 }
-
-vrrpStaticRouteBlackhole OBJECT-TYPE
-    SYNTAX TruthValue
-    MAX-ACCESS read-only
-    STATUS current
-    DESCRIPTION
-	"Is this route a blackhole?"
-    ::= { vrrpStaticRouteEntry 10 }
-
-vrrpStaticRouteIfIndex OBJECT-TYPE
-    SYNTAX InterfaceIndex
-    MAX-ACCESS read-only
-    STATUS current
-    DESCRIPTION
-	"Interface attached to this route."
-    ::= { vrrpStaticRouteEntry 11 }
-
-vrrpStaticRouteIfName OBJECT-TYPE
-    SYNTAX DisplayString
-    MAX-ACCESS read-only
-    STATUS current
-    DESCRIPTION
-	"Name of the interface of attached to this route."
-    ::= { vrrpStaticRouteEntry 12 }
-
-vrrpStaticRouteRoutingTable OBJECT-TYPE
-    SYNTAX Unsigned32
-    MAX-ACCESS read-only
-    STATUS current
-    DESCRIPTION
-	"Routing table where to route should be inserted."
-    ::= { vrrpStaticRouteEntry 13 }
-
-vrrpStaticRouteIsSet OBJECT-TYPE
-    SYNTAX TruthValue
-    MAX-ACCESS read-only
-    STATUS current
-    DESCRIPTION
-	"Is this static route set in the kernel?"
-    ::= { vrrpStaticRouteEntry 14 }
-
 -- Sync groups
 -- see vrrp.h
 
@@ -415,7 +70,7 @@ vrrpSyncGroupTable OBJECT-TYPE
     STATUS current
     DESCRIPTION
         "Table of sync groups"
-    ::= { vrrp 5 }
+    ::= { vrrp 2 }
 
 vrrpSyncGroupEntry OBJECT-TYPE
     SYNTAX VrrpSyncGroupEntry
@@ -516,7 +171,7 @@ vrrpSyncGroupMemberTable OBJECT-TYPE
     STATUS current
     DESCRIPTION
         "Table of instances contained in sync groups"
-    ::= { vrrp 6 }
+    ::= { vrrp 3 }
 
 vrrpSyncGroupMemberEntry OBJECT-TYPE
     SYNTAX VrrpSyncGroupMemberEntry
@@ -560,7 +215,7 @@ vrrpInstanceTable OBJECT-TYPE
     STATUS current
     DESCRIPTION
         "Table of VRRP instances"
-    ::= { vrrp 7 }
+    ::= { vrrp 4 }
 
 vrrpInstanceEntry OBJECT-TYPE
     SYNTAX VrrpInstanceEntry
@@ -572,7 +227,7 @@ vrrpInstanceEntry OBJECT-TYPE
     ::= { vrrpInstanceTable 1 }
 
 VrrpInstanceEntry ::= SEQUENCE {
-	vrrpInstanceIndex Integer32,
+	vrrpInstanceIndex INTEGER,
 	vrrpInstanceName DisplayString,
 	vrrpInstanceVirtualRouterId Unsigned32,
 	vrrpInstanceState VrrpState,
@@ -601,11 +256,15 @@ VrrpInstanceEntry ::= SEQUENCE {
 }
 
 vrrpInstanceIndex OBJECT-TYPE
-    SYNTAX Integer32 (1..2147483647)
+    SYNTAX INTEGER {
+    	static(0)
+	}
     MAX-ACCESS not-accessible
     STATUS current
     DESCRIPTION
-	"Index of the VRRP instance."
+	"Index of the VRRP instance.
+
+	 Instance 0 is for static IP and static routes."
     ::= { vrrpInstanceEntry 1 }
 
 vrrpInstanceName OBJECT-TYPE
@@ -822,7 +481,7 @@ vrrpTrackedInterfaceTable OBJECT-TYPE
     STATUS current
     DESCRIPTION
         "Table of tracked interfaces for each VRRP instance."
-    ::= { vrrp 8 }
+    ::= { vrrp 5 }
 
 vrrpTrackedInterfaceEntry OBJECT-TYPE
     SYNTAX VrrpTrackedInterfaceEntry
@@ -860,7 +519,7 @@ vrrpTrackedScriptTable OBJECT-TYPE
     STATUS current
     DESCRIPTION
         "Table of tracked interfaces for each VRRP instance."
-    ::= { vrrp 9 }
+    ::= { vrrp 6 }
 
 vrrpTrackedScriptEntry OBJECT-TYPE
     SYNTAX VrrpTrackedScriptEntry
@@ -903,6 +562,363 @@ vrrpTrackedScriptWeight OBJECT-TYPE
         "Weight of the tracked interface."
     ::= { vrrpTrackedScriptEntry 3 }
 
+-- IP addresses
+-- see vrrp_ipaddress.h
+
+vrrpAddressTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF VrrpAddressEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "Table of static and virtual addresses"
+    ::= { vrrp 7 }
+
+vrrpAddressEntry OBJECT-TYPE
+    SYNTAX VrrpAddressEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "Information describing an address. This can be a static
+         address or a virtual address. In case of static address, the
+         VRRP instance index is 0."
+    INDEX { vrrpInstanceIndex, vrrpAddressIndex }
+    ::= { vrrpAddressTable 1 }
+
+VrrpAddressEntry ::= SEQUENCE {
+	vrrpAddressIndex Integer32,
+        vrrpAddressType InetAddressType,
+	vrrpAddressValue InetAddress,
+	vrrpAddressBroadcast InetAddress,
+	vrrpAddressMask InetAddressPrefixLength,
+	vrrpAddressScope InetScopeType,
+	vrrpAddressIfIndex InterfaceIndex,
+	vrrpAddressIfName DisplayString,
+	vrrpAddressIfAlias DisplayString,
+	vrrpAddressIsSet TruthValue,
+	vrrpAddressIsAdvertised TruthValue
+}
+
+vrrpAddressIndex OBJECT-TYPE
+    SYNTAX Integer32 (1..2147483647)
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+	"Address index."
+    ::= { vrrpAddressEntry 1 }
+
+vrrpAddressType OBJECT-TYPE
+    SYNTAX InetAddressType
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"A value that represents a type of Internet address."
+    ::= { vrrpAddressEntry 2 }
+
+vrrpAddressValue OBJECT-TYPE
+    SYNTAX InetAddress
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Actual IP address."
+    ::= { vrrpAddressEntry 3 }
+
+vrrpAddressBroadcast OBJECT-TYPE
+    SYNTAX InetAddress
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Broadcast address associated with the IP address."
+    ::= { vrrpAddressEntry 4 }
+
+vrrpAddressMask OBJECT-TYPE
+    SYNTAX InetAddressPrefixLength
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Address mask."
+    ::= { vrrpAddressEntry 5 }
+
+vrrpAddressScope OBJECT-TYPE
+    SYNTAX InetScopeType
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Address scope."
+    ::= { vrrpAddressEntry 6 }
+
+vrrpAddressIfIndex OBJECT-TYPE
+    SYNTAX InterfaceIndex
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Index of the interface to which the IP address is linked to."
+    ::= { vrrpAddressEntry 7 }
+
+vrrpAddressIfName OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Name of the interface to which the IP address is linked to."
+    ::= { vrrpAddressEntry 8 }
+
+vrrpAddressIfAlias OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Alias name of the interface."
+    ::= { vrrpAddressEntry 9 }
+
+vrrpAddressIsSet OBJECT-TYPE
+    SYNTAX TruthValue
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"true(1) if the address is set, false(0) otherwise."
+    ::= { vrrpAddressEntry 10 }
+
+vrrpAddressIsAdvertised OBJECT-TYPE
+    SYNTAX TruthValue
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"true(1) if the address is advertised through VRRP, false(0) otherwise."
+    ::= { vrrpAddressEntry 11 }
+
+-- Routes
+-- see vrrp_iproute.h
+
+vrrpRouteTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF VrrpRouteEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "Table of static and virtual routes."
+    ::= { vrrp 8 }
+
+vrrpRouteEntry OBJECT-TYPE
+    SYNTAX VrrpRouteEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "Information describing a route. In case of a static route,
+        the instance index is 0."
+    INDEX { vrrpInstanceIndex, vrrpRouteIndex }
+    ::= { vrrpRouteTable 1 }
+
+VrrpRouteEntry ::= SEQUENCE {
+	vrrpRouteIndex Integer32,
+        vrrpRouteAddressType InetAddressType,
+	vrrpRouteDestination InetAddress,
+	vrrpRouteDestinationMask InetAddressPrefixLength,
+	vrrpRouteGateway InetAddress,
+	vrrpRouteSecondaryGateway InetAddress,
+	vrrpRouteSource InetAddress,
+	vrrpRouteMetric Unsigned32,
+	vrrpRouteScope InetScopeType,
+	vrrpRouteBlackhole TruthValue,
+	vrrpRouteIfIndex InterfaceIndex,
+	vrrpRouteIfName DisplayString,
+	vrrpRouteRoutingTable Unsigned32,
+	vrrpRouteIsSet TruthValue
+}
+
+vrrpRouteIndex OBJECT-TYPE
+    SYNTAX Integer32 (1..2147483647)
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+	"Route index."
+    ::= { vrrpRouteEntry 1 }
+
+vrrpRouteAddressType OBJECT-TYPE
+    SYNTAX InetAddressType
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Route type of internet address."
+    ::= { vrrpRouteEntry 2 }
+
+vrrpRouteDestination OBJECT-TYPE
+    SYNTAX InetAddress
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Route destination."
+    ::= { vrrpRouteEntry 3 }
+
+vrrpRouteDestinationMask OBJECT-TYPE
+    SYNTAX InetAddressPrefixLength
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Route destination mask."
+    ::= { vrrpRouteEntry 4 }
+
+vrrpRouteGateway OBJECT-TYPE
+    SYNTAX InetAddress
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Gateway for the given destination."
+    ::= { vrrpRouteEntry 5 }
+
+vrrpRouteSecondaryGateway OBJECT-TYPE
+    SYNTAX InetAddress
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"An optional second gateway for the given destination."
+    ::= { vrrpRouteEntry 6 }
+
+vrrpRouteSource OBJECT-TYPE
+    SYNTAX InetAddress
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Which source IP address to use with this route."
+    ::= { vrrpRouteEntry 7 }
+
+vrrpRouteMetric OBJECT-TYPE
+    SYNTAX Unsigned32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Metric of this route."
+    ::= { vrrpRouteEntry 8 }
+
+vrrpRouteScope OBJECT-TYPE
+    SYNTAX InetScopeType
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Scope of this route."
+    ::= { vrrpRouteEntry 9 }
+
+vrrpRouteBlackhole OBJECT-TYPE
+    SYNTAX TruthValue
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Is this route a blackhole?"
+    ::= { vrrpRouteEntry 10 }
+
+vrrpRouteIfIndex OBJECT-TYPE
+    SYNTAX InterfaceIndex
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Interface attached to this route."
+    ::= { vrrpRouteEntry 11 }
+
+vrrpRouteIfName OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Name of the interface of attached to this route."
+    ::= { vrrpRouteEntry 12 }
+
+vrrpRouteRoutingTable OBJECT-TYPE
+    SYNTAX Unsigned32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Routing table where to route should be inserted."
+    ::= { vrrpRouteEntry 13 }
+
+vrrpRouteIsSet OBJECT-TYPE
+    SYNTAX TruthValue
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Is this route set in the kernel?"
+    ::= { vrrpRouteEntry 14 }
+
+-- VRRP scripts
+-- see vrrp_track.h
+
+vrrpScriptTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF VrrpScriptEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "Table of VRRP scripts"
+    ::= { vrrp 9 }
+
+vrrpScriptEntry OBJECT-TYPE
+    SYNTAX VrrpScriptEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "Information describing a VRRP script"
+    INDEX { vrrpScriptIndex }
+    ::= { vrrpScriptTable 1 }
+
+VrrpScriptEntry ::= SEQUENCE {
+	vrrpScriptIndex Integer32,
+        vrrpScriptName DisplayString,
+        vrrpScriptCommand DisplayString,
+        vrrpScriptInterval Integer32,
+        vrrpScriptWeight Integer32,
+        vrrpScriptResult INTEGER
+}
+
+vrrpScriptIndex OBJECT-TYPE
+    SYNTAX Integer32 (1..2147483647)
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+	"Script index."
+    ::= { vrrpScriptEntry 1 }
+
+vrrpScriptName OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+        "Symbolic name of the script."
+    ::= { vrrpScriptEntry 2 }
+
+vrrpScriptCommand OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+        "Command executed when running the script."
+    ::= { vrrpScriptEntry 3 }
+
+vrrpScriptInterval OBJECT-TYPE
+    SYNTAX Integer32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+        "Interval in seconds between two runs of the script."
+    ::= { vrrpScriptEntry 4 }
+
+vrrpScriptWeight OBJECT-TYPE
+    SYNTAX Integer32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+        "Weight of the script if successful."
+    ::= { vrrpScriptEntry 5 }
+
+vrrpScriptResult OBJECT-TYPE
+    SYNTAX INTEGER {
+        disabled(0),
+        init(1),
+        none(2),
+        good(3),
+        initgood(4)
+           }
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+        "Current status of the script."
+    ::= { vrrpScriptEntry 6 }
+
 -- ----------------------------------------------------------------------
 -- Conformance
 -- ----------------------------------------------------------------------
@@ -918,12 +934,8 @@ vrrpCompliances MODULE-COMPLIANCE
     MANDATORY-GROUPS {
     	vrrpGroup,
 	vrrpScriptGroup,
-	vrrpStaticAddressGroup,
-	vrrpStaticRouteGroup,
 	vrrpSyncGroup,
-	vrrpInstanceGroup,
-	vrrpTrackedInterfaceGroup,
-	vrrpTrackedScriptGroup
+	vrrpInstanceGroup
     }
     ::= { compliances 1 }
 
@@ -935,57 +947,6 @@ vrrpGroup OBJECT-GROUP
     DESCRIPTION
 	"Conformance group for misc VRRP objects."
     ::= { groups 1 }
-
-vrrpScriptGroup OBJECT-GROUP
-    OBJECTS {
-    	vrrpScriptName,
-	vrrpScriptCommand,
-	vrrpScriptInterval,
-	vrrpScriptWeight,
-	vrrpScriptResult
-	}
-    STATUS current
-    DESCRIPTION
-	"Conformance group for VRRP scripts."
-    ::= { groups 2 }
-
-vrrpStaticAddressGroup OBJECT-GROUP
-    OBJECTS {
-        vrrpStaticAddressType,
-	vrrpStaticAddressValue,
-	vrrpStaticAddressBroadcast,
-	vrrpStaticAddressMask,
-	vrrpStaticAddressScope,
-	vrrpStaticAddressIfIndex,
-	vrrpStaticAddressIfName,
-	vrrpStaticAddressIfAlias,
-	vrrpStaticAddressIsSet
-	}
-    STATUS current
-    DESCRIPTION
-	"Conformance group for static addresses."
-    ::= { groups 3 }
-
-vrrpStaticRouteGroup OBJECT-GROUP
-    OBJECTS {
-        vrrpStaticRouteAddressType,
-	vrrpStaticRouteDestination,
-	vrrpStaticRouteDestinationMask,
-	vrrpStaticRouteGateway,
-	vrrpStaticRouteSecondaryGateway,
-	vrrpStaticRouteSource,
-	vrrpStaticRouteMetric,
-	vrrpStaticRouteScope,
-	vrrpStaticRouteBlackhole,
-	vrrpStaticRouteIfIndex,
-	vrrpStaticRouteIfName,
-	vrrpStaticRouteRoutingTable,
-	vrrpStaticRouteIsSet
-	}
-    STATUS current
-    DESCRIPTION
-	"Conformance group for static routes."
-    ::= { groups 4 }
 
 vrrpSyncGroup OBJECT-GROUP
     OBJECTS {
@@ -1002,7 +963,7 @@ vrrpSyncGroup OBJECT-GROUP
     STATUS current
     DESCRIPTION
 	"Conformance group for synchronisation groups."
-    ::= { groups 5 }
+    ::= { groups 2 }
 
 vrrpInstanceGroup OBJECT-GROUP
     OBJECTS {
@@ -1030,31 +991,51 @@ vrrpInstanceGroup OBJECT-GROUP
 	vrrpInstanceScriptBackup,
 	vrrpInstanceScriptFault,
 	vrrpInstanceScriptStop,
-	vrrpInstanceScript
+	vrrpInstanceScript,
+	vrrpTrackedInterfaceName,
+	vrrpTrackedInterfaceWeight,
+	vrrpTrackedScriptName,
+	vrrpTrackedScriptWeight,
+        vrrpAddressType,
+	vrrpAddressValue,
+	vrrpAddressBroadcast,
+	vrrpAddressMask,
+	vrrpAddressScope,
+	vrrpAddressIfIndex,
+	vrrpAddressIfName,
+	vrrpAddressIfAlias,
+	vrrpAddressIsSet,
+	vrrpAddressIsAdvertised,
+        vrrpRouteAddressType,
+	vrrpRouteDestination,
+	vrrpRouteDestinationMask,
+	vrrpRouteGateway,
+	vrrpRouteSecondaryGateway,
+	vrrpRouteSource,
+	vrrpRouteMetric,
+	vrrpRouteScope,
+	vrrpRouteBlackhole,
+	vrrpRouteIfIndex,
+	vrrpRouteIfName,
+	vrrpRouteRoutingTable,
+	vrrpRouteIsSet
 	}
     STATUS current
     DESCRIPTION
 	"Conformance group for VRRP instances."
-    ::= { groups 6 }
+    ::= { groups 3 }
 
-vrrpTrackedInterfaceGroup OBJECT-GROUP
+vrrpScriptGroup OBJECT-GROUP
     OBJECTS {
-	vrrpTrackedInterfaceName,
-	vrrpTrackedInterfaceWeight
+    	vrrpScriptName,
+	vrrpScriptCommand,
+	vrrpScriptInterval,
+	vrrpScriptWeight,
+	vrrpScriptResult
 	}
     STATUS current
     DESCRIPTION
-	"Conformance group for VRRP tracked interfaces."
-    ::= { groups 7 }
-
-vrrpTrackedScriptGroup OBJECT-GROUP
-    OBJECTS {
-	vrrpTrackedScriptName,
-	vrrpTrackedScriptWeight
-	}
-    STATUS current
-    DESCRIPTION
-	"Conformance group for VRRP tracked scripts."
-    ::= { groups 8 }
+	"Conformance group for VRRP scripts."
+    ::= { groups 4 }
 
 END
