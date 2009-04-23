@@ -44,5 +44,6 @@ parser.o: parser.c parser.h memory.h
 signals.o: signals.c signals.h
 logger.o: logger.c logger.h
 ifeq ($(SNMP_FLAG),_WITH_SNMP_)
-snmp.o: snmp.c snmp.h logger.h list.h
+snmp.o: snmp.c snmp.h logger.h list.h \
+  ../keepalived/include/config.h ../keepalived/include/global_data.h
 endif

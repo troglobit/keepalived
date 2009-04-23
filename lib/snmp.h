@@ -35,6 +35,8 @@
 
 #include "list.h"
 
+#define GLOBAL_OID {1, 3, 6, 1, 4, 1, 60000, 1}
+
 /* For net-snmp */
 extern int register_sysORTable(oid *, size_t, const char *);
 extern int unregister_sysORTable(oid *, size_t);

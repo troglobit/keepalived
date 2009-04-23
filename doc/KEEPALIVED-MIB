@@ -45,21 +45,107 @@ VrrpState ::= TEXTUAL-CONVENTION
 	unknown(4)
 	}
 
-vrrp                    OBJECT IDENTIFIER ::= { keepalived 1 }
-check                   OBJECT IDENTIFIER ::= { keepalived 2 }
-conformance		OBJECT IDENTIFIER ::= { keepalived 3 }
+global			OBJECT IDENTIFIER ::= { keepalived 1 }
+vrrp                    OBJECT IDENTIFIER ::= { keepalived 2 }
+check                   OBJECT IDENTIFIER ::= { keepalived 3 }
+conformance		OBJECT IDENTIFIER ::= { keepalived 4 }
 
 -- ----------------------------------------------------------------------
--- VRRP part
+-- Global part
 -- ----------------------------------------------------------------------
 
-vrrpKeepalivedVersion OBJECT-TYPE
+version OBJECT-TYPE
     SYNTAX DisplayString
     MAX-ACCESS read-only
     STATUS current
     DESCRIPTION
-	"Version of keepalived"
-    ::= { vrrp 1 }
+    	"Version of keepalived"
+    ::= { global 1 }
+
+routerId OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+    	"Router ID"
+    ::= { global 2 }
+
+mail	OBJECT IDENTIFIER ::= { global 3 }
+
+smtpServerAddressType OBJECT-TYPE
+    SYNTAX InetAddressType
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+    	"Address type for SMTP server."
+    ::= { mail 1 }
+
+smtpServerAddress OBJECT-TYPE
+    SYNTAX InetAddress
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+    	"Address of SMTP server."
+    ::= { mail 2 }
+
+smtpServerTimeout OBJECT-TYPE
+    SYNTAX Unsigned32
+    UNITS "seconds"
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+    	"SMTP server connection timeout."
+    ::= { mail 3 }
+
+emailFrom OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+    	"Email address for the From field."
+    ::= { mail 4 }
+
+emailTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF EmailEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+	"Table of email notification addresses."
+    ::= { mail 5 }
+
+emailEntry OBJECT-TYPE
+    SYNTAX EmailEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+	"Email address to be notified with an alert."
+    INDEX { emailIndex }
+    ::= { emailTable 1 }
+
+EmailEntry ::= SEQUENCE {
+	emailIndex Integer32,
+	emailAddress DisplayString
+}
+
+emailIndex OBJECT-TYPE
+    SYNTAX Integer32 (1..2147483647)
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+	"Index for the email address."
+    ::= { emailEntry 1 }
+
+emailAddress OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Email address to be notified when an alert is raised."
+    ::= { emailEntry 2 }
+
+-- ----------------------------------------------------------------------
+-- VRRP part
+-- ----------------------------------------------------------------------
 
 -- Sync groups
 -- see vrrp.h
@@ -70,7 +156,7 @@ vrrpSyncGroupTable OBJECT-TYPE
     STATUS current
     DESCRIPTION
         "Table of sync groups"
-    ::= { vrrp 2 }
+    ::= { vrrp 1 }
 
 vrrpSyncGroupEntry OBJECT-TYPE
     SYNTAX VrrpSyncGroupEntry
@@ -171,7 +257,7 @@ vrrpSyncGroupMemberTable OBJECT-TYPE
     STATUS current
     DESCRIPTION
         "Table of instances contained in sync groups"
-    ::= { vrrp 3 }
+    ::= { vrrp 2 }
 
 vrrpSyncGroupMemberEntry OBJECT-TYPE
     SYNTAX VrrpSyncGroupMemberEntry
@@ -215,7 +301,7 @@ vrrpInstanceTable OBJECT-TYPE
     STATUS current
     DESCRIPTION
         "Table of VRRP instances"
-    ::= { vrrp 4 }
+    ::= { vrrp 3 }
 
 vrrpInstanceEntry OBJECT-TYPE
     SYNTAX VrrpInstanceEntry
@@ -484,7 +570,7 @@ vrrpTrackedInterfaceTable OBJECT-TYPE
     STATUS current
     DESCRIPTION
         "Table of tracked interfaces for each VRRP instance."
-    ::= { vrrp 5 }
+    ::= { vrrp 4 }
 
 vrrpTrackedInterfaceEntry OBJECT-TYPE
     SYNTAX VrrpTrackedInterfaceEntry
@@ -522,7 +608,7 @@ vrrpTrackedScriptTable OBJECT-TYPE
     STATUS current
     DESCRIPTION
         "Table of tracked interfaces for each VRRP instance."
-    ::= { vrrp 6 }
+    ::= { vrrp 5 }
 
 vrrpTrackedScriptEntry OBJECT-TYPE
     SYNTAX VrrpTrackedScriptEntry
@@ -574,7 +660,7 @@ vrrpAddressTable OBJECT-TYPE
     STATUS current
     DESCRIPTION
         "Table of static and virtual addresses"
-    ::= { vrrp 7 }
+    ::= { vrrp 6 }
 
 vrrpAddressEntry OBJECT-TYPE
     SYNTAX VrrpAddressEntry
@@ -698,7 +784,7 @@ vrrpRouteTable OBJECT-TYPE
     STATUS current
     DESCRIPTION
         "Table of static and virtual routes."
-    ::= { vrrp 8 }
+    ::= { vrrp 7 }
 
 vrrpRouteEntry OBJECT-TYPE
     SYNTAX VrrpRouteEntry
@@ -848,7 +934,7 @@ vrrpScriptTable OBJECT-TYPE
     STATUS current
     DESCRIPTION
         "Table of VRRP scripts"
-    ::= { vrrp 9 }
+    ::= { vrrp 8 }
 
 vrrpScriptEntry OBJECT-TYPE
     SYNTAX VrrpScriptEntry
@@ -930,26 +1016,41 @@ vrrpScriptResult OBJECT-TYPE
 compliances  OBJECT IDENTIFIER ::= { conformance 1 }
 groups	     OBJECT IDENTIFIER ::= { conformance 2 }
 
+globalCompliances MODULE-COMPLIANCE
+    STATUS current
+    DESCRIPTION
+	"Compliance statement for global data"
+    MODULE -- this module
+    MANDATORY-GROUPS {
+    	globalGroup
+    }
+    ::= { compliances 1 }
+
 vrrpCompliances MODULE-COMPLIANCE
     STATUS current
     DESCRIPTION
 	"The core compliance statement"
     MODULE -- this module
     MANDATORY-GROUPS {
-    	vrrpGroup,
 	vrrpScriptGroup,
 	vrrpSyncGroup,
 	vrrpInstanceGroup
     }
-    ::= { compliances 1 }
+    ::= { compliances 2 }
 
-vrrpGroup OBJECT-GROUP
+globalGroup OBJECT-GROUP
     OBJECTS {
-    	vrrpKeepalivedVersion
-	}
+    	version,
+	routerId,
+	smtpServerAddressType,
+	smtpServerAddress,
+	smtpServerTimeout,
+	emailFrom,
+	emailAddress
+    }
     STATUS current
     DESCRIPTION
-	"Conformance group for misc VRRP objects."
+	"Conformance group for global data."
     ::= { groups 1 }
 
 vrrpSyncGroup OBJECT-GROUP
