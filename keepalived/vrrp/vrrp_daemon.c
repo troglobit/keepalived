@@ -67,7 +67,8 @@ stop_vrrp(void)
 	free_interface_queue();
 	gratuitous_arp_close();
 #ifdef _WITH_SNMP_
-	vrrp_snmp_agent_close();
+	if (snmp)
+		vrrp_snmp_agent_close();
 #endif
 
 	/* Stop daemon */
@@ -104,7 +105,7 @@ start_vrrp(void)
 	kernel_netlink_init();
 	gratuitous_arp_init();
 #ifdef _WITH_SNMP_
-	if (!reload)
+	if (!reload && snmp)
 		vrrp_snmp_agent_init();
 #endif
 

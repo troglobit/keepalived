@@ -89,6 +89,7 @@ void
 snmp_agent_init(oid *myoid, int len, char *name, struct variable *variables,
 		int varsize, int varlen)
 {
+	log_message(LOG_INFO, "Starting SNMP subagent");
 	netsnmp_enable_subagent();
 	snmp_disable_log();
 	snmp_enable_calllog();
