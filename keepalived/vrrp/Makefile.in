@@ -38,7 +38,7 @@ vrrp_daemon.o: vrrp_daemon.c ../include/vrrp_daemon.h ../include/vrrp_scheduler.
   ../include/vrrp_iproute.h ../include/vrrp_parser.h ../include/vrrp_data.h \
   ../include/vrrp.h ../include/global_data.h ../include/pidfile.h ../include/daemon.h \
   ../include/ipvswrapper.h ../../lib/list.h ../../lib/memory.h ../../lib/parser.h \
-  ../../lib/signals.h ../../lib/snmp.h ../include/vrrp_snmp.h
+  ../../lib/signals.h ../include/snmp.h ../include/vrrp_snmp.h
 vrrp_data.o: vrrp_data.c ../include/vrrp_data.h \
   ../include/vrrp_sync.h ../include/vrrp_if.h ../include/vrrp_index.h \
   ../include/vrrp.h ../../lib/memory.h ../../lib/utils.h ../../lib/notify.h
@@ -77,4 +77,4 @@ vrrp_iproute.o: vrrp_iproute.c ../include/vrrp_iproute.h ../include/vrrp_netlink
 vrrp_ipsecah.o: vrrp_ipsecah.c ../include/vrrp_ipsecah.h
 vrrp_snmp.o: vrrp_snmp.c ../include/vrrp_snmp.h ../include/vrrp_track.h \
   ../include/vrrp_data.h ../include/vrrp_ipaddress.h ../include/vrrp_iproute.h \
-  ../include/vrrp.h ../../lib/vector.h ../../lib/list.h
+  ../include/vrrp.h ../../lib/vector.h ../../lib/list.h ../include/snmp.h 

@@ -4,8 +4,6 @@
 #
 # Copyright (C) 2001-2009 Alexandre Cassen, <acassen@freebox.fr>
 
-SNMP_FLAG = @SNMP_SUPPORT@
-
 CC	 = @CC@
 INCLUDES = -I.
 CFLAGS	 = @CFLAGS@ $(INCLUDES) \
@@ -15,9 +13,6 @@ COMPILE	 = $(CC) $(CFLAGS) $(DEFS)
 
 OBJS = 	memory.o utils.o notify.o timer.o scheduler.o \
 	vector.o list.o html.o parser.o signals.o logger.o
-ifeq ($(SNMP_FLAG),_WITH_SNMP_)
-  OBJS += snmp.o
-endif
 
 HEADERS = $(OBJS:.o=.h)
 
@@ -43,7 +38,3 @@ html.o: html.c html.h memory.h
 parser.o: parser.c parser.h memory.h
 signals.o: signals.c signals.h
 logger.o: logger.c logger.h
-ifeq ($(SNMP_FLAG),_WITH_SNMP_)
-snmp.o: snmp.c snmp.h logger.h list.h \
-  ../keepalived/include/config.h ../keepalived/include/global_data.h
-endif
