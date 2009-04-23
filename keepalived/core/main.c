@@ -161,11 +161,11 @@ usage(const char *prog)
 		"  %s --version            -v    Display the version number\n"
 		"  %s --pid                -p    pidfile\n"
 		"  %s --checkers_pid       -c    checkers pidfile\n"
-		"  %s --vrrp_pid           -r    vrrp pidfile\n",
+		"  %s --vrrp_pid           -r    vrrp pidfile\n"
 #ifdef _WITH_SNMP_
-		"  %s --snmp               -s    Enable SNMP subsystem\n", prog,
+		"  %s --snmp               -s    Enable SNMP subsystem\n", prog
 #endif
-		prog, prog, prog, prog, prog, prog, prog, prog,
+		, prog, prog, prog, prog, prog, prog, prog, prog,
 		prog, prog, prog, prog, prog, prog, prog);
 }
 
