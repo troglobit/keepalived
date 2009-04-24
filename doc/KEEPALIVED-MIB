@@ -1090,7 +1090,7 @@ virtualServerGroupMemberIndex OBJECT-TYPE
     ::= { virtualServerGroupMemberEntry 1 }
 
 virtualServerGroupMemberType OBJECT-TYPE
-    SYNTAX INTEGER { fwmark(1), address(2), range(3) }
+    SYNTAX INTEGER { fwmark(1), ip(2), iprange(3) }
     MAX-ACCESS read-only
     STATUS current
     DESCRIPTION
