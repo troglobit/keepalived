@@ -193,10 +193,8 @@ snmp_agent_init(oid *myoid, int len, char *name, struct variable *variables,
 		     global_oid, OID_LENGTH(global_oid));
 	init_snmp(name);
 
-	if (register_sysORTable(myoid, len,
-				"keepalived") != 0)
-		log_message(LOG_WARNING, "Unable to register to sysORTable");
-	register_sysORTable(global_oid, OID_LENGTH(global_oid), "keepalievd");
+	register_sysORTable(global_oid, OID_LENGTH(global_oid) - 1,
+			    "The MIB module for Keepalived");
 }
 
 void
