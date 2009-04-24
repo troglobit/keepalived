@@ -12,7 +12,7 @@ IMPORTS
         FROM SNMPv2-SMI
     OBJECT-GROUP, MODULE-COMPLIANCE
     	FROM SNMPv2-CONF
-    InetAddressType, InetAddress,
+    InetAddressType, InetAddress, InetPortNumber,
     InetAddressPrefixLength, InetScopeType
     	FROM INET-ADDRESS-MIB
     InterfaceIndex, ifIndex
@@ -1010,6 +1010,170 @@ vrrpScriptResult OBJECT-TYPE
     ::= { vrrpScriptEntry 6 }
 
 -- ----------------------------------------------------------------------
+-- Healthchecker part
+-- ----------------------------------------------------------------------
+
+-- Virtual server group
+
+virtualServerGroupTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF CheckVSGroupEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+	"Table of virtual server groups."
+    ::= { check 1 }
+
+virtualServerGroupEntry OBJECT-TYPE
+    SYNTAX CheckVSGroupEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+	"Information describing a virtual server group."
+    INDEX { virtualServerGroupIndex }
+    ::= { virtualServerGroupTable 1 }
+
+CheckVSGroupEntry ::= SEQUENCE {
+	virtualServerGroupIndex Integer32,
+	virtualServerGroupName DisplayString
+}
+
+virtualServerGroupIndex OBJECT-TYPE
+    SYNTAX Integer32 (1..2147483647)
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+	"Index of the virtual server group."
+    ::= { virtualServerGroupEntry 1 }
+
+virtualServerGroupName OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Name of the virtual server group."
+    ::= { virtualServerGroupEntry 2 }
+
+virtualServerGroupMemberTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF CheckVSGroupMemberEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+	"Table of members of a virtual server group."
+    ::= { check 2 }
+
+virtualServerGroupMemberEntry OBJECT-TYPE
+    SYNTAX CheckVSGroupMemberEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+	"Description of a member of a virtual server group."
+    INDEX { virtualServerGroupIndex, virtualServerGroupMemberIndex }
+    ::= { virtualServerGroupMemberTable 1 }
+
+CheckVSGroupMemberEntry ::= SEQUENCE {
+	virtualServerGroupMemberIndex Integer32,
+	virtualServerGroupMemberStatus INTEGER,
+	virtualServerGroupMemberType INTEGER,
+	virtualServerGroupMemberFwMark Unsigned32,
+	virtualServerGroupMemberAddrType InetAddressType,
+	virtualServerGroupMemberAddress InetAddress,
+	virtualServerGroupMemberAddr1 InetAddress,
+	virtualServerGroupMemberAddr2 InetAddress,
+	virtualServerGroupMemberPort InetPortNumber
+}
+
+virtualServerGroupMemberIndex OBJECT-TYPE
+    SYNTAX Integer32 (1..2147483647)
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+	"Index of the member into virtual server group."
+    ::= { virtualServerGroupMemberEntry 1 }
+
+virtualServerGroupMemberStatus OBJECT-TYPE
+    SYNTAX INTEGER { alive(1), dead(2) }
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Current status of this member."
+    ::= { virtualServerGroupMemberEntry 2 }
+
+virtualServerGroupMemberType OBJECT-TYPE
+    SYNTAX INTEGER { fwmark(1), address(2), range(3) }
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Kind of entry: firewall mark, address with port or range of
+	 addresses with port."
+    ::= { virtualServerGroupMemberEntry 3 }
+
+virtualServerGroupMemberFwMark OBJECT-TYPE
+    SYNTAX Unsigned32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Firewall mark for this member.
+
+	 If the kind of this member is not fwmark(1), then this entry
+	 should not exist for the current row."
+    ::= { virtualServerGroupMemberEntry 4 }
+
+virtualServerGroupMemberAddrType OBJECT-TYPE
+    SYNTAX InetAddressType
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Type of IP address for this member.
+
+	 If the kind of this member is neither address(2) or range(3),
+	 then this entry should not exist for the current row."
+    ::= { virtualServerGroupMemberEntry 5 }
+
+virtualServerGroupMemberAddress OBJECT-TYPE
+    SYNTAX InetAddress
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"IP address of this member.
+
+	If the kind of this member is not address(2), then this entry
+	should not exist for the current row."
+    ::= { virtualServerGroupMemberEntry 6 }
+
+virtualServerGroupMemberAddr1 OBJECT-TYPE
+    SYNTAX InetAddress
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"First IP address of the range for this member.
+
+	If the kind of this member is not range(3), then this entry
+	should not exist for the current row."
+    ::= { virtualServerGroupMemberEntry 7 }
+
+virtualServerGroupMemberAddr2 OBJECT-TYPE
+    SYNTAX InetAddress
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Second IP address of the range for this member.
+
+	If the kind of this member is not range(3), then this entry
+	should not exist for the current row."
+    ::= { virtualServerGroupMemberEntry 8 }
+
+virtualServerGroupMemberPort OBJECT-TYPE
+    SYNTAX InetPortNumber
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"V port for this member.
+
+	If the kind of this member is neither address(2) nor range(3),
+	then this entry should not exist for the current row."
+    ::= { virtualServerGroupMemberEntry 9 }
+
+-- ----------------------------------------------------------------------
 -- Conformance
 -- ----------------------------------------------------------------------
 
@@ -1034,7 +1198,8 @@ vrrpCompliances MODULE-COMPLIANCE
     MANDATORY-GROUPS {
 	vrrpScriptGroup,
 	vrrpSyncGroup,
-	vrrpInstanceGroup
+	vrrpInstanceGroup,
+	virtualServerGroup
     }
     ::= { compliances 2 }
 
@@ -1142,5 +1307,22 @@ vrrpScriptGroup OBJECT-GROUP
     DESCRIPTION
 	"Conformance group for VRRP scripts."
     ::= { groups 4 }
+
+virtualServerGroup OBJECT-GROUP
+    OBJECTS {
+	virtualServerGroupName,
+	virtualServerGroupMemberStatus,
+	virtualServerGroupMemberType,
+	virtualServerGroupMemberFwMark,
+	virtualServerGroupMemberAddrType,
+	virtualServerGroupMemberAddress,
+	virtualServerGroupMemberAddr1,
+	virtualServerGroupMemberAddr2,
+	virtualServerGroupMemberPort
+	}
+    STATUS current
+    DESCRIPTION
+	"Conformance group for virtual server groups."
+    ::= { groups 5 }
 
 END

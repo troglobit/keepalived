@@ -4,6 +4,8 @@
 #
 # Copyright (C) 2001-2009 Alexandre Cassen, <acassen@freebox.fr>
 
+SNMP_FLAG = @SNMP_SUPPORT@
+
 KERNEL   = @KERN@
 CC	 = @CC@
 INCLUDES = -I../include -I../../lib
@@ -15,6 +17,9 @@ COMPILE	 = $(CC) $(CFLAGS) $(DEFS)
 OBJS = 	check_daemon.o check_data.o check_parser.o \
 	check_api.o check_tcp.o check_http.o check_ssl.o \
 	check_smtp.o check_misc.o ipwrapper.o ipvswrapper.o
+ifeq ($(SNMP_FLAG),_WITH_SNMP_)
+  OBJS += check_snmp.o
+endif
 
 ifeq ($(KERNEL),_KRNL_2_2_)
   OBJS += ipfwwrapper.o
@@ -39,7 +44,7 @@ check_daemon.o: check_daemon.c ../include/check_daemon.h \
   ../include/global_data.h ../include/ipwrapper.h ../include/ipwrapper.h \
   ../include/pidfile.h ../include/daemon.h ../../lib/list.h ../../lib/memory.h \
   ../../lib/parser.h ../../lib/signals.h ../include/vrrp_netlink.h \
-  ../include/vrrp_if.h
+  ../include/vrrp_if.h ../include/snmp.h ../include/check_snmp.h
 check_data.o: check_data.c ../include/check_data.h \
   ../include/check_api.h ../../lib/memory.h ../../lib/utils.h
 check_parser.o: check_parser.c ../include/check_parser.h \
@@ -68,3 +73,5 @@ ipwrapper.o: ipwrapper.c ../include/ipwrapper.h ../../lib/memory.h \
   ../../lib/utils.h ../../lib/notify.h
 ipvswrapper.o: ipvswrapper.c ../include/ipvswrapper.h ../../lib/utils.h \
   ../../lib/memory.h
+check_snmp.o: check_snmp.c ../include/check_snmp.h ../include/check_data.h \
+  ../../lib/list.h
