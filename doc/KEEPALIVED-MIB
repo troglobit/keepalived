@@ -1072,7 +1072,6 @@ virtualServerGroupMemberEntry OBJECT-TYPE
 
 CheckVSGroupMemberEntry ::= SEQUENCE {
 	virtualServerGroupMemberIndex Integer32,
-	virtualServerGroupMemberStatus INTEGER,
 	virtualServerGroupMemberType INTEGER,
 	virtualServerGroupMemberFwMark Unsigned32,
 	virtualServerGroupMemberAddrType InetAddressType,
@@ -1090,14 +1089,6 @@ virtualServerGroupMemberIndex OBJECT-TYPE
 	"Index of the member into virtual server group."
     ::= { virtualServerGroupMemberEntry 1 }
 
-virtualServerGroupMemberStatus OBJECT-TYPE
-    SYNTAX INTEGER { alive(1), dead(2) }
-    MAX-ACCESS read-only
-    STATUS current
-    DESCRIPTION
-	"Current status of this member."
-    ::= { virtualServerGroupMemberEntry 2 }
-
 virtualServerGroupMemberType OBJECT-TYPE
     SYNTAX INTEGER { fwmark(1), address(2), range(3) }
     MAX-ACCESS read-only
@@ -1105,7 +1096,7 @@ virtualServerGroupMemberType OBJECT-TYPE
     DESCRIPTION
 	"Kind of entry: firewall mark, address with port or range of
 	 addresses with port."
-    ::= { virtualServerGroupMemberEntry 3 }
+    ::= { virtualServerGroupMemberEntry 2 }
 
 virtualServerGroupMemberFwMark OBJECT-TYPE
     SYNTAX Unsigned32
@@ -1116,7 +1107,7 @@ virtualServerGroupMemberFwMark OBJECT-TYPE
 
 	 If the kind of this member is not fwmark(1), then this entry
 	 should not exist for the current row."
-    ::= { virtualServerGroupMemberEntry 4 }
+    ::= { virtualServerGroupMemberEntry 3 }
 
 virtualServerGroupMemberAddrType OBJECT-TYPE
     SYNTAX InetAddressType
@@ -1127,7 +1118,7 @@ virtualServerGroupMemberAddrType OBJECT-TYPE
 
 	 If the kind of this member is neither address(2) or range(3),
 	 then this entry should not exist for the current row."
-    ::= { virtualServerGroupMemberEntry 5 }
+    ::= { virtualServerGroupMemberEntry 4 }
 
 virtualServerGroupMemberAddress OBJECT-TYPE
     SYNTAX InetAddress
@@ -1138,7 +1129,7 @@ virtualServerGroupMemberAddress OBJECT-TYPE
 
 	If the kind of this member is not address(2), then this entry
 	should not exist for the current row."
-    ::= { virtualServerGroupMemberEntry 6 }
+    ::= { virtualServerGroupMemberEntry 5 }
 
 virtualServerGroupMemberAddr1 OBJECT-TYPE
     SYNTAX InetAddress
@@ -1149,7 +1140,7 @@ virtualServerGroupMemberAddr1 OBJECT-TYPE
 
 	If the kind of this member is not range(3), then this entry
 	should not exist for the current row."
-    ::= { virtualServerGroupMemberEntry 7 }
+    ::= { virtualServerGroupMemberEntry 6 }
 
 virtualServerGroupMemberAddr2 OBJECT-TYPE
     SYNTAX InetAddress
@@ -1160,7 +1151,7 @@ virtualServerGroupMemberAddr2 OBJECT-TYPE
 
 	If the kind of this member is not range(3), then this entry
 	should not exist for the current row."
-    ::= { virtualServerGroupMemberEntry 8 }
+    ::= { virtualServerGroupMemberEntry 7 }
 
 virtualServerGroupMemberPort OBJECT-TYPE
     SYNTAX InetPortNumber
@@ -1171,7 +1162,7 @@ virtualServerGroupMemberPort OBJECT-TYPE
 
 	If the kind of this member is neither address(2) nor range(3),
 	then this entry should not exist for the current row."
-    ::= { virtualServerGroupMemberEntry 9 }
+    ::= { virtualServerGroupMemberEntry 8 }
 
 -- ----------------------------------------------------------------------
 -- Conformance
@@ -1311,7 +1302,6 @@ vrrpScriptGroup OBJECT-GROUP
 virtualServerGroup OBJECT-GROUP
     OBJECTS {
 	virtualServerGroupName,
-	virtualServerGroupMemberStatus,
 	virtualServerGroupMemberType,
 	virtualServerGroupMemberFwMark,
 	virtualServerGroupMemberAddrType,

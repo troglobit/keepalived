@@ -28,7 +28,6 @@
 
 /* Magic */
 #define CHECK_SNMP_VSGROUPNAME 1
-#define CHECK_SNMP_VSGROUPMEMBERSTATUS 2
 #define CHECK_SNMP_VSGROUPMEMBERTYPE 3
 #define CHECK_SNMP_VSGROUPMEMBERFWMARK 4
 #define CHECK_SNMP_VSGROUPMEMBERADDRTYPE 5
@@ -161,9 +160,6 @@ check_snmp_vsgroupmember(struct variable *vp, oid *name, size_t *length,
         *length = vp->namelen + 2;
  vsgmember_found:
 	switch (vp->magic) {
-	case CHECK_SNMP_VSGROUPMEMBERSTATUS:
-		long_ret = be->alive?1:2;
-		return (u_char *)&long_ret;
 	case CHECK_SNMP_VSGROUPMEMBERTYPE:
 		if (be->vfwmark)
 			long_ret = 1;
@@ -214,22 +210,20 @@ static struct variable8 check_vars[] = {
 	{CHECK_SNMP_VSGROUPNAME, ASN_OCTET_STR, RONLY,
 	 check_snmp_vsgroup, 3, {1, 1, 2}},
 	/* virtualServerGroupMemberTable */
-	{CHECK_SNMP_VSGROUPMEMBERSTATUS, ASN_INTEGER, RONLY,
-	 check_snmp_vsgroupmember, 3, {2, 1, 2}},
 	{CHECK_SNMP_VSGROUPMEMBERTYPE, ASN_INTEGER, RONLY,
-	 check_snmp_vsgroupmember, 3, {2, 1, 3}},
+	 check_snmp_vsgroupmember, 3, {2, 1, 2}},
 	{CHECK_SNMP_VSGROUPMEMBERFWMARK, ASN_UNSIGNED, RONLY,
-	 check_snmp_vsgroupmember, 3, {2, 1, 4}},
+	 check_snmp_vsgroupmember, 3, {2, 1, 3}},
 	{CHECK_SNMP_VSGROUPMEMBERADDRTYPE, ASN_INTEGER, RONLY,
-	 check_snmp_vsgroupmember, 3, {2, 1, 5}},
+	 check_snmp_vsgroupmember, 3, {2, 1, 4}},
 	{CHECK_SNMP_VSGROUPMEMBERADDRESS, ASN_OCTET_STR, RONLY,
-	 check_snmp_vsgroupmember, 3, {2, 1, 6}},
+	 check_snmp_vsgroupmember, 3, {2, 1, 5}},
 	{CHECK_SNMP_VSGROUPMEMBERADDR1, ASN_OCTET_STR, RONLY,
-	 check_snmp_vsgroupmember, 3, {2, 1, 7}},
+	 check_snmp_vsgroupmember, 3, {2, 1, 6}},
 	{CHECK_SNMP_VSGROUPMEMBERADDR2, ASN_OCTET_STR, RONLY,
-	 check_snmp_vsgroupmember, 3, {2, 1, 8}},
+	 check_snmp_vsgroupmember, 3, {2, 1, 7}},
 	{CHECK_SNMP_VSGROUPMEMBERPORT, ASN_UNSIGNED, RONLY,
-	 check_snmp_vsgroupmember, 3, {2, 1, 9}},
+	 check_snmp_vsgroupmember, 3, {2, 1, 8}},
 };
 
 void
