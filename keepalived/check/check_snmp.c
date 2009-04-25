@@ -60,6 +60,18 @@
 #define CHECK_SNMP_VSHYSTERESIS 33
 #define CHECK_SNMP_VSREALTOTAL 34
 #define CHECK_SNMP_VSREALUP 35
+#define CHECK_SNMP_RSTYPE 36
+#define CHECK_SNMP_RSADDRTYPE 37
+#define CHECK_SNMP_RSADDRESS 38
+#define CHECK_SNMP_RSPORT 39
+#define CHECK_SNMP_RSSTATUS 40
+#define CHECK_SNMP_RSWEIGHT 41
+#define CHECK_SNMP_RSUPPERCONNECTIONLIMIT 42
+#define CHECK_SNMP_RSLOWERCONNECTIONLIMIT 43
+#define CHECK_SNMP_RSACTIONWHENDOWN 44
+#define CHECK_SNMP_RSNOTIFYUP 45
+#define CHECK_SNMP_RSNOTIFYDOWN 46
+#define CHECK_SNMP_RSFAILEDCHECKS 47
 
 static u_char*
 check_snmp_vsgroup(struct variable *vp, oid *name, size_t *length,
@@ -400,6 +412,182 @@ check_snmp_virtualserver(struct variable *vp, oid *name, size_t *length,
         return NULL;
 }
 
+static u_char*
+check_snmp_realserver(struct variable *vp, oid *name, size_t *length,
+		      int exact, size_t *var_len, WriteMethod **write_method)
+{
+	static unsigned long long_ret;
+        oid *target, current[2], best[2];
+        int result, target_len;
+	int curvirtual = 0, curreal;
+	real_server *e = NULL, *be = NULL;
+	element e1, e2 = NULL;
+	virtual_server *vs;
+#define STATE_RS_SORRY 1
+#define STATE_RS_REGULAR_FIRST 2
+#define STATE_RS_REGULAR_NEXT 3
+#define STATE_RS_END 4
+	int state;
+	int type, btype;
+
+        if ((result = snmp_oid_compare(name, *length, vp->name, vp->namelen)) < 0) {
+                memcpy(name, vp->name, sizeof(oid) * vp->namelen);
+                *length = vp->namelen;
+        }
+
+	*write_method = 0;
+	*var_len = sizeof(long);
+
+	if (LIST_ISEMPTY(check_data->vs))
+		return NULL;
+
+	/* We search the best match: equal if exact, the lower OID in
+	   the set of the OID strictly superior to the target
+	   otherwise. */
+        best[0] = best[1] = MAX_SUBID; /* Our best match */
+        target = &name[vp->namelen];   /* Our target match */
+        target_len = *length - vp->namelen;
+	for (e1 = LIST_HEAD(check_data->vs); e1; ELEMENT_NEXT(e1)) {
+		vs = ELEMENT_DATA(e1);
+		curvirtual++;
+		curreal = 0;
+		if (target_len && (curvirtual < target[0]))
+			continue; /* Optimization: cannot be part of our set */
+		if (be)
+			break; /* Optimization: cannot be the lower anymore */
+		state = STATE_RS_SORRY;
+		while (state != STATE_RS_END) {
+			switch (state) {
+			case STATE_RS_SORRY:
+				e = vs->s_svr;
+				type = state++;
+				break;
+			case STATE_RS_REGULAR_FIRST:
+				if (LIST_ISEMPTY(vs->rs)) {
+					e = NULL;
+					break;
+				}
+				e2 = LIST_HEAD(vs->rs);
+				e = ELEMENT_DATA(e2);
+				type = state++;
+				break;
+			case STATE_RS_REGULAR_NEXT:
+				type = state;
+				ELEMENT_NEXT(e2);
+				if (!e2) {
+					e = NULL;
+					state++;
+					break;
+				}
+				e = ELEMENT_DATA(e2);
+				break;
+			default:
+				/* Dunno? */
+				return NULL;
+			}
+			if (!e)
+				continue;
+			curreal++;
+			/* We build our current match */
+			current[0] = curvirtual;
+			current[1] = curreal;
+			/* And compare it to our target match */
+			if ((result = snmp_oid_compare(current, 2, target,
+						       target_len)) < 0)
+				continue;
+			if ((result == 0) && !exact)
+				continue;
+			if (result == 0) {
+				/* Got an exact match and asked for it */
+				be = e;
+				btype = type;
+				goto real_found;
+			}
+			if (snmp_oid_compare(current, 2, best, 2) < 0) {
+				/* This is our best match */
+				memcpy(best, current, sizeof(oid) * 2);
+				be = e;
+				btype = type;
+				goto real_be_found;
+			}
+		}
+	}
+	if (be == NULL)
+		/* No best match */
+		return NULL;
+	if (exact)
+		/* No exact match */
+		return NULL;
+ real_be_found:
+	/* Let's use our best match */
+        memcpy(target, best, sizeof(oid) * 2);
+        *length = vp->namelen + 2;
+ real_found:
+	switch (vp->magic) {
+	case CHECK_SNMP_RSTYPE:
+		long_ret = (btype == STATE_RS_SORRY)?2:1;
+		return (u_char*)&long_ret;
+	case CHECK_SNMP_RSADDRTYPE:
+		long_ret = 1;	/* IPv4 */
+		return (u_char*)&long_ret;
+	case CHECK_SNMP_RSADDRESS:
+		*var_len = 4;
+		return (u_char*)&be->addr_ip;
+	case CHECK_SNMP_RSPORT:
+		long_ret = htons(be->addr_port);
+		return (u_char*)&long_ret;
+	case CHECK_SNMP_RSSTATUS:
+		if (btype == STATE_RS_SORRY) break;
+		long_ret = be->alive?1:2;
+		return (u_char*)&long_ret;
+	case CHECK_SNMP_RSWEIGHT:
+		if (btype == STATE_RS_SORRY) break;
+		long_ret = be->weight;
+		return (u_char*)&long_ret;
+#ifdef _KRNL_2_6_
+	case CHECK_SNMP_RSUPPERCONNECTIONLIMIT:
+		if (btype == STATE_RS_SORRY) break;
+		if (!be->u_threshold) break;
+		long_ret = be->u_threshold;
+		return (u_char*)&long_ret;
+	case CHECK_SNMP_RSLOWERCONNECTIONLIMIT:
+		if (btype == STATE_RS_SORRY) break;
+		if (!be->l_threshold) break;
+		long_ret = be->l_threshold;
+		return (u_char*)&long_ret;
+#endif
+	case CHECK_SNMP_RSACTIONWHENDOWN:
+		if (btype == STATE_RS_SORRY) break;
+		long_ret = be->inhibit?2:1;
+		return (u_char*)&long_ret;
+	case CHECK_SNMP_RSNOTIFYUP:
+		if (btype == STATE_RS_SORRY) break;
+		if (!be->notify_up) break;
+		*var_len = strlen(be->notify_up);
+		return (u_char*)be->notify_up;
+	case CHECK_SNMP_RSNOTIFYDOWN:
+		if (btype == STATE_RS_SORRY) break;
+		if (!be->notify_down) break;
+		*var_len = strlen(be->notify_down);
+		return (u_char*)be->notify_down;
+	case CHECK_SNMP_RSFAILEDCHECKS:
+		if (btype == STATE_RS_SORRY) break;
+		if (LIST_ISEMPTY(be->failed_checkers))
+			long_ret = 0;
+		else
+			long_ret = LIST_SIZE(be->failed_checkers);
+		return (u_char*)&long_ret;
+	default:
+		return NULL;
+	}
+	/* If we are here, we asked for a non existent data. Try the
+	   next one. */
+	if (!exact && (name[*length-1] < MAX_SUBID))
+		return check_snmp_realserver(vp, name, length,
+					     exact, var_len, write_method);
+        return NULL;
+}
+
 static oid check_oid[] = CHECK_OID;
 static struct variable8 check_vars[] = {
 	/* virtualServerGroupTable */
@@ -471,6 +659,33 @@ static struct variable8 check_vars[] = {
 	 check_snmp_virtualserver, 3, {3, 1, 25}},
 	{CHECK_SNMP_VSHYSTERESIS, ASN_UNSIGNED, RONLY,
 	 check_snmp_virtualserver, 3, {3, 1, 26}},
+	/* realServerTable */
+	{CHECK_SNMP_RSTYPE, ASN_INTEGER, RONLY,
+	 check_snmp_realserver, 3, {4, 1, 2}},
+	{CHECK_SNMP_RSADDRTYPE, ASN_INTEGER, RONLY,
+	 check_snmp_realserver, 3, {4, 1, 3}},
+	{CHECK_SNMP_RSADDRESS, ASN_OCTET_STR, RONLY,
+	 check_snmp_realserver, 3, {4, 1, 4}},
+	{CHECK_SNMP_RSPORT, ASN_UNSIGNED, RONLY,
+	 check_snmp_realserver, 3, {4, 1, 5}},
+	{CHECK_SNMP_RSSTATUS, ASN_INTEGER, RONLY,
+	 check_snmp_realserver, 3, {4, 1, 6}},
+	{CHECK_SNMP_RSWEIGHT, ASN_INTEGER, RONLY,
+	 check_snmp_realserver, 3, {4, 1, 7}},
+#ifdef _KRNL_2_6_
+	{CHECK_SNMP_RSUPPERCONNECTIONLIMIT, ASN_UNSIGNED, RONLY,
+	 check_snmp_realserver, 3, {4, 1, 8}},
+	{CHECK_SNMP_RSLOWERCONNECTIONLIMIT, ASN_UNSIGNED, RONLY,
+	 check_snmp_realserver, 3, {4, 1, 9}},
+#endif
+	{CHECK_SNMP_RSACTIONWHENDOWN, ASN_INTEGER, RONLY,
+	 check_snmp_realserver, 3, {4, 1, 10}},
+	{CHECK_SNMP_RSNOTIFYUP, ASN_OCTET_STR, RONLY,
+	 check_snmp_realserver, 3, {4, 1, 11}},
+	{CHECK_SNMP_RSNOTIFYDOWN, ASN_OCTET_STR, RONLY,
+	 check_snmp_realserver, 3, {4, 1, 12}},
+	{CHECK_SNMP_RSFAILEDCHECKS, ASN_UNSIGNED, RONLY,
+	 check_snmp_realserver, 3, {4, 1, 13}},
 };
 
 void

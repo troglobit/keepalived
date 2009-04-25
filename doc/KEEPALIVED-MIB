@@ -1446,6 +1446,146 @@ virtualServerHysteresis OBJECT-TYPE
 	"Hysteresis with respect to quorum count."
     ::= { virtualServerEntry 26 }
 
+-- real servers
+
+realServerTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF RealServerEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+	"Table of real servers. This includes regular real servers and sorry servers."
+    ::= { check 4 }
+
+realServerEntry OBJECT-TYPE
+    SYNTAX RealServerEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+	"Information describing a real server."
+    INDEX { virtualServerIndex, realServerIndex }
+    ::= { realServerTable 1 }
+
+RealServerEntry ::= SEQUENCE {
+	realServerIndex Integer32,
+	realServerType INTEGER,
+	realServerAddrType InetAddressType,
+	realServerAddress InetAddress,
+	realServerPort InetPortNumber,
+	realServerStatus INTEGER,
+	realServerWeight Integer32,
+	realServerUpperConnectionLimit Unsigned32,
+	realServerLowerConnectionLimit Unsigned32,
+	realServerActionWhenDown INTEGER,
+	realServerNotifyUp DisplayString,
+	realServerNotifyDown DisplayString,
+	realServerFailedChecks Unsigned32
+}
+
+realServerIndex OBJECT-TYPE
+    SYNTAX Integer32 (1..2147483647)
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+	"Index of the real server."
+    ::= { realServerEntry 1 }
+
+realServerType OBJECT-TYPE
+    SYNTAX INTEGER { regular(1), sorry(2) }
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Type of real server: either a regular real server or a sorry server."
+    ::= { realServerEntry 2 }
+
+realServerAddrType OBJECT-TYPE
+    SYNTAX InetAddressType
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Address family for this real server."
+    ::= { realServerEntry 3 }
+
+realServerAddress OBJECT-TYPE
+    SYNTAX InetAddress
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"IP address of this real server."
+    ::= { realServerEntry 4 }
+
+realServerPort OBJECT-TYPE
+    SYNTAX InetPortNumber
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Port of the service."
+    ::= { realServerEntry 5 }
+
+realServerStatus OBJECT-TYPE
+    SYNTAX INTEGER { alive(1), dead(2) }
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Status of this real server."
+    ::= { realServerEntry 6 }
+
+realServerWeight OBJECT-TYPE
+    SYNTAX Integer32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Weight of this real server."
+    ::= { realServerEntry 7 }
+
+realServerUpperConnectionLimit OBJECT-TYPE
+    SYNTAX Unsigned32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Maximum number of connections for this real server."
+    ::= { realServerEntry 8 }
+
+realServerLowerConnectionLimit OBJECT-TYPE
+    SYNTAX Unsigned32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Minimum number of connections for this real server."
+    ::= { realServerEntry 9 }
+
+realServerActionWhenDown OBJECT-TYPE
+    SYNTAX INTEGER { remove(1), inhibit(2) }
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"What action is performed when this server is down. Its weight
+	can be set to 0 (inhibit) or it can be removed from the pool."
+    ::= { realServerEntry 10 }
+
+realServerNotifyUp OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Command to execute when this server becomes alive."
+    ::= { realServerEntry 11 }
+
+realServerNotifyDown OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Command to execute when this server becomes dead."
+    ::= { realServerEntry 12 }
+
+realServerFailedChecks OBJECT-TYPE
+    SYNTAX Unsigned32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"How many failed checks for this real server."
+    ::= { realServerEntry 13 }
+
 -- ----------------------------------------------------------------------
 -- Conformance
 -- ----------------------------------------------------------------------
@@ -1466,16 +1606,26 @@ globalCompliances MODULE-COMPLIANCE
 vrrpCompliances MODULE-COMPLIANCE
     STATUS current
     DESCRIPTION
-	"The core compliance statement"
+	"The VRRP compliance statement"
     MODULE -- this module
     MANDATORY-GROUPS {
 	vrrpScriptGroup,
 	vrrpSyncGroup,
-	vrrpInstanceGroup,
-	virtualServerGroupGroup,
-	virtualServerGroup
+	vrrpInstanceGroup
     }
     ::= { compliances 2 }
+
+checkCompliances MODULE-COMPLIANCE
+    STATUS current
+    DESCRIPTION
+	"The check compliance statement"
+    MODULE -- this module
+    MANDATORY-GROUPS {
+	virtualServerGroupGroup,
+	virtualServerGroup,
+	realServerGroup
+    }
+    ::= { compliances 3 }
 
 globalGroup OBJECT-GROUP
     OBJECTS {
@@ -1630,5 +1780,25 @@ virtualServerGroup OBJECT-GROUP
     DESCRIPTION
 	"Conformance group for virtual servers."
     ::= { groups 6 }
+
+realServerGroup OBJECT-GROUP
+    OBJECTS {
+	realServerType,
+	realServerAddrType,
+	realServerAddress,
+	realServerPort,
+	realServerStatus,
+	realServerWeight,
+	realServerUpperConnectionLimit,
+	realServerLowerConnectionLimit,
+	realServerActionWhenDown,
+	realServerNotifyUp,
+	realServerNotifyDown,
+	realServerFailedChecks
+	}
+    STATUS current
+    DESCRIPTION
+	"Conformance group for real servers."
+    ::= { groups 7 }
 
 END
