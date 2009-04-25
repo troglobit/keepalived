@@ -1016,7 +1016,7 @@ vrrpScriptResult OBJECT-TYPE
 -- Virtual server group
 
 virtualServerGroupTable OBJECT-TYPE
-    SYNTAX SEQUENCE OF CheckVSGroupEntry
+    SYNTAX SEQUENCE OF VirtualServerGroupEntry
     MAX-ACCESS not-accessible
     STATUS current
     DESCRIPTION
@@ -1024,7 +1024,7 @@ virtualServerGroupTable OBJECT-TYPE
     ::= { check 1 }
 
 virtualServerGroupEntry OBJECT-TYPE
-    SYNTAX CheckVSGroupEntry
+    SYNTAX VirtualServerGroupEntry
     MAX-ACCESS not-accessible
     STATUS current
     DESCRIPTION
@@ -1032,7 +1032,7 @@ virtualServerGroupEntry OBJECT-TYPE
     INDEX { virtualServerGroupIndex }
     ::= { virtualServerGroupTable 1 }
 
-CheckVSGroupEntry ::= SEQUENCE {
+VirtualServerGroupEntry ::= SEQUENCE {
 	virtualServerGroupIndex Integer32,
 	virtualServerGroupName DisplayString
 }
@@ -1054,7 +1054,7 @@ virtualServerGroupName OBJECT-TYPE
     ::= { virtualServerGroupEntry 2 }
 
 virtualServerGroupMemberTable OBJECT-TYPE
-    SYNTAX SEQUENCE OF CheckVSGroupMemberEntry
+    SYNTAX SEQUENCE OF VirtualServerGroupMemberEntry
     MAX-ACCESS not-accessible
     STATUS current
     DESCRIPTION
@@ -1062,7 +1062,7 @@ virtualServerGroupMemberTable OBJECT-TYPE
     ::= { check 2 }
 
 virtualServerGroupMemberEntry OBJECT-TYPE
-    SYNTAX CheckVSGroupMemberEntry
+    SYNTAX VirtualServerGroupMemberEntry
     MAX-ACCESS not-accessible
     STATUS current
     DESCRIPTION
@@ -1070,7 +1070,7 @@ virtualServerGroupMemberEntry OBJECT-TYPE
     INDEX { virtualServerGroupIndex, virtualServerGroupMemberIndex }
     ::= { virtualServerGroupMemberTable 1 }
 
-CheckVSGroupMemberEntry ::= SEQUENCE {
+VirtualServerGroupMemberEntry ::= SEQUENCE {
 	virtualServerGroupMemberIndex Integer32,
 	virtualServerGroupMemberType INTEGER,
 	virtualServerGroupMemberFwMark Unsigned32,
