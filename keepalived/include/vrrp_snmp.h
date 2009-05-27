@@ -28,7 +28,7 @@
 
 #include "snmp.h"
 
-#define VRRP_OID {1, 3, 6, 1, 4, 1, 60000, 2}
+#define VRRP_OID {1, 3, 6, 1, 4, 1, 9586, 100, 5, 2}
 
 extern void vrrp_snmp_agent_init(void);
 extern void vrrp_snmp_agent_close(void);

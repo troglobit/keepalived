@@ -31,7 +31,7 @@ keepalived MODULE-IDENTITY
      REVISION "200904080000Z"
      DESCRIPTION "Initial revision"
 
-     ::= { enterprises 60000 }
+     ::= { project 5 }
 
 VrrpState ::= TEXTUAL-CONVENTION
     STATUS       current
@@ -44,6 +44,9 @@ VrrpState ::= TEXTUAL-CONVENTION
 	fault(3),
 	unknown(4)
 	}
+-- We are hosted under Debian OID. See http://dsa.debian.org/iana/
+debian			OBJECT IDENTIFIER ::= { enterprises 9586 }
+project			OBJECT IDENTIFIER ::= { debian 100}
 
 global			OBJECT IDENTIFIER ::= { keepalived 1 }
 vrrp                    OBJECT IDENTIFIER ::= { keepalived 2 }
