@@ -163,7 +163,7 @@ usage(const char *prog)
 		"  %s --checkers_pid       -c    checkers pidfile\n"
 		"  %s --vrrp_pid           -r    vrrp pidfile\n"
 #ifdef _WITH_SNMP_
-		"  %s --snmp               -s    Enable SNMP subsystem\n", prog
+		"  %s --snmp               -x    Enable SNMP subsystem\n", prog
 #endif
 		, prog, prog, prog, prog, prog, prog, prog, prog,
 		prog, prog, prog, prog, prog, prog, prog);
