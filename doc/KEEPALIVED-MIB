@@ -47,7 +47,7 @@ VrrpState ::= TEXTUAL-CONVENTION
 	}
 -- We are hosted under Debian OID. See http://dsa.debian.org/iana/
 debian			OBJECT IDENTIFIER ::= { enterprises 9586 }
-project			OBJECT IDENTIFIER ::= { debian 100}
+project			OBJECT IDENTIFIER ::= { debian 100 }
 
 global			OBJECT IDENTIFIER ::= { keepalived 1 }
 vrrp                    OBJECT IDENTIFIER ::= { keepalived 2 }
