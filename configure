@@ -4310,7 +4310,7 @@ $as_echo "$LINUX_MAJOR.$LINUX_MINOR.$LINUX_PATCH" >&6; }
   elif test "$LINUX_MINOR" = "4"; then
     KERN="_KRNL_2_4_"
   else
-    KERN="_KRNL_2_2_"
+    KERN="_KRNL_2_6_"
   fi
   if test "$LINUX_MAJOR" = "0" -a "$LINUX_MINOR" = "0" -a "$LINUX_PATCH" = "0"; then
     { $as_echo "$as_me:$LINENO: WARNING: Cannot determine Linux Kernel version." >&5

@@ -103,4 +103,10 @@ extern int ipvs_syncd_cmd(int cmd, char *ifname, int state, int syncid);
 extern void ipvs_syncd_master(char *ifname, int syncid);
 extern void ipvs_syncd_backup(char *ifname, int syncid);
 
+#ifdef _KRNL_2_6_
+/* Refresh statistics at most every 5 seconds */
+#define STATS_REFRESH 5
+extern void ipvs_update_stats(virtual_server * vs);
+#endif
+
 #endif
