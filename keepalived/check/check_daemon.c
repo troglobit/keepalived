@@ -41,7 +41,7 @@
 #include "vrrp_netlink.h"
 #include "vrrp_if.h"
 #ifdef _WITH_SNMP_
-  #include "vrrp_snmp.h"
+  #include "check_snmp.h"
 #endif
 
 extern char *checkers_pidfile;
