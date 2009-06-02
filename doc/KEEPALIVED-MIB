@@ -9,9 +9,9 @@ KEEPALIVED-MIB DEFINITIONS ::= BEGIN
 IMPORTS
     OBJECT-TYPE, MODULE-IDENTITY,
     Integer32, Unsigned32, Counter32, Counter64,
-    Gauge32, enterprises
+    Gauge32, enterprises, NOTIFICATION-TYPE
         FROM SNMPv2-SMI
-    OBJECT-GROUP, MODULE-COMPLIANCE
+    OBJECT-GROUP, MODULE-COMPLIANCE, NOTIFICATION-GROUP
     	FROM SNMPv2-CONF
     InetAddressType, InetAddress, InetPortNumber,
     InetAddressPrefixLength, InetScopeType
@@ -146,6 +146,18 @@ emailAddress OBJECT-TYPE
     DESCRIPTION
 	"Email address to be notified when an alert is raised."
     ::= { emailEntry 2 }
+
+trapEnable OBJECT-TYPE
+    SYNTAX INTEGER { enabled(1), disabled(2) }
+    MAX-ACCESS read-write
+    STATUS current
+    DESCRIPTION
+	"Indicate whether traps should be sent for various events.
+
+	When changing this value using SNMP agent, the change will not
+	be permanent. Only using enable_traps in configuration file
+	will make this change permanent."
+    ::= { global 4 }
 
 -- ----------------------------------------------------------------------
 -- VRRP part
@@ -1013,6 +1025,34 @@ vrrpScriptResult OBJECT-TYPE
         "Current status of the script."
     ::= { vrrpScriptEntry 6 }
 
+-- Traps
+
+vrrpTrap OBJECT IDENTIFIER ::= { vrrp 9 }
+vrrpTraps OBJECT IDENTIFIER ::= { vrrpTrap 0 } -- Reverse-mappable
+vrrpTrapControl OBJECT IDENTIFIER ::= { vrrpTrap 1 }
+
+vrrpSyncGroupStateChange NOTIFICATION-TYPE
+    OBJECTS {
+    	vrrpSyncGroupName,
+	vrrpSyncGroupState
+    }
+    STATUS current
+    DESCRIPTION
+	"This trap signifies that the state of the whole vrrp sync
+	group changed."
+    ::= { vrrpTraps 1 }
+
+vrrpInstanceStateChange NOTIFICATION-TYPE
+    OBJECTS {
+    	vrrpInstanceName,
+	vrrpInstanceState,
+	vrrpInstanceInitialState
+    }
+    STATUS current
+    DESCRIPTION
+	"This trap signifies that the state of a vrrp instance changed."
+    ::= { vrrpTraps 2 }
+
 -- ----------------------------------------------------------------------
 -- Healthchecker part
 -- ----------------------------------------------------------------------
@@ -1847,7 +1887,8 @@ vrrpCompliances MODULE-COMPLIANCE
     MANDATORY-GROUPS {
 	vrrpScriptGroup,
 	vrrpSyncGroup,
-	vrrpInstanceGroup
+	vrrpInstanceGroup,
+	vrrpTrapsGroup
     }
     ::= { compliances 2 }
 
@@ -1871,12 +1912,15 @@ globalGroup OBJECT-GROUP
 	smtpServerAddress,
 	smtpServerTimeout,
 	emailFrom,
-	emailAddress
+	emailAddress,
+	trapEnable
     }
     STATUS current
     DESCRIPTION
 	"Conformance group for global data."
     ::= { groups 1 }
+
+vrrpGroups OBJECT IDENTIFIER ::= { groups 2 }
 
 vrrpSyncGroup OBJECT-GROUP
     OBJECTS {
@@ -1893,7 +1937,7 @@ vrrpSyncGroup OBJECT-GROUP
     STATUS current
     DESCRIPTION
 	"Conformance group for synchronisation groups."
-    ::= { groups 2 }
+    ::= { vrrpGroups 1 }
 
 vrrpInstanceGroup OBJECT-GROUP
     OBJECTS {
@@ -1953,7 +1997,7 @@ vrrpInstanceGroup OBJECT-GROUP
     STATUS current
     DESCRIPTION
 	"Conformance group for VRRP instances."
-    ::= { groups 3 }
+    ::= { vrrpGroups 2 }
 
 vrrpScriptGroup OBJECT-GROUP
     OBJECTS {
@@ -1966,7 +2010,19 @@ vrrpScriptGroup OBJECT-GROUP
     STATUS current
     DESCRIPTION
 	"Conformance group for VRRP scripts."
-    ::= { groups 4 }
+    ::= { vrrpGroups 3 }
+
+vrrpTrapsGroup NOTIFICATION-GROUP
+    NOTIFICATIONS {
+    	vrrpSyncGroupStateChange,
+    	vrrpInstanceStateChange
+	}
+    STATUS current
+    DESCRIPTION
+	"Conformance group for VRRP traps."
+    ::= { vrrpGroups 4 }
+
+checkGroups OBJECT IDENTIFIER ::= { groups 3 }
 
 virtualServerGroupGroup OBJECT-GROUP
     OBJECTS {
@@ -1982,7 +2038,7 @@ virtualServerGroupGroup OBJECT-GROUP
     STATUS current
     DESCRIPTION
 	"Conformance group for virtual server groups."
-    ::= { groups 5 }
+    ::= { checkGroups 1 }
 
 virtualServerGroup OBJECT-GROUP
     OBJECTS {
@@ -2025,7 +2081,7 @@ virtualServerGroup OBJECT-GROUP
     STATUS current
     DESCRIPTION
 	"Conformance group for virtual servers."
-    ::= { groups 6 }
+    ::= { checkGroups 2 }
 
 realServerGroup OBJECT-GROUP
     OBJECTS {
@@ -2058,6 +2114,6 @@ realServerGroup OBJECT-GROUP
     STATUS current
     DESCRIPTION
 	"Conformance group for real servers."
-    ::= { groups 7 }
+    ::= { checkGroups 3 }
 
 END

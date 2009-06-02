@@ -39,6 +39,9 @@
 #include "main.h"
 #include "smtp.h"
 #include "signals.h"
+#ifdef _WITH_SNMP_
+#include "vrrp_snmp.h"
+#endif
 
 /* VRRP FSM (Finite State Machine) design.
  *
@@ -258,6 +261,9 @@ vrrp_init_state(list l)
 			vrrp->state = VRRP_STATE_BACK;
 			vrrp_smtp_notifier(vrrp);
 			notify_instance_exec(vrrp, VRRP_STATE_BACK);
+#ifdef _WITH_SNMP_
+			vrrp_snmp_instance_trap(vrrp);
+#endif
 
 			/* Init group if needed  */
 			if ((vgroup = vrrp->sync)) {
@@ -265,6 +271,9 @@ vrrp_init_state(list l)
 					vgroup->state = VRRP_STATE_BACK;
 					vrrp_sync_smtp_notifier(vgroup);
 					notify_group_exec(vgroup, VRRP_STATE_BACK);
+#ifdef _WITH_SNMP_
+					vrrp_snmp_group_trap(vgroup);
+#endif
 				}
 			}
 		}
@@ -632,6 +641,9 @@ vrrp_leave_fault(vrrp_rt * vrrp, char *buffer, int len)
 				vrrp->state = VRRP_STATE_BACK;
 				vrrp_smtp_notifier(vrrp);
 				notify_instance_exec(vrrp, VRRP_STATE_BACK);
+#ifdef _WITH_SNMP_
+				vrrp_snmp_instance_trap(vrrp);
+#endif
 			}
 		} else {
 			log_message(LOG_INFO, "VRRP_Instance(%s) Entering BACKUP STATE",
@@ -639,6 +651,9 @@ vrrp_leave_fault(vrrp_rt * vrrp, char *buffer, int len)
 			vrrp->state = VRRP_STATE_BACK;
 			vrrp_smtp_notifier(vrrp);
 			notify_instance_exec(vrrp, VRRP_STATE_BACK);
+#ifdef _WITH_SNMP_
+			vrrp_snmp_instance_trap(vrrp);
+#endif
 		}
 	}
 }
@@ -653,6 +668,9 @@ vrrp_goto_master(vrrp_rt * vrrp)
 		vrrp->state = VRRP_STATE_FAULT;
 		vrrp->ms_down_timer = 3 * vrrp->adver_int + VRRP_TIMER_SKEW(vrrp);
 		notify_instance_exec(vrrp, VRRP_STATE_FAULT);
+#ifdef _WITH_SNMP_
+		vrrp_snmp_instance_trap(vrrp);
+#endif
 	} else {
 		/* If becoming MASTER in IPSEC AH AUTH, we reset the anti-replay */
 		if (vrrp->ipsecah_counter->cycle) {
@@ -791,6 +809,9 @@ vrrp_fault(vrrp_rt * vrrp)
 		if (vrrp->init_state == VRRP_STATE_BACK) {
 			vrrp->state = VRRP_STATE_BACK;
 			notify_instance_exec(vrrp, VRRP_STATE_BACK);
+#ifdef _WITH_SNMP_
+			vrrp_snmp_instance_trap(vrrp);
+#endif
 		} else {
 			vrrp_goto_master(vrrp);
 		}

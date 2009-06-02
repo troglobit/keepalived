@@ -52,6 +52,9 @@ typedef struct _conf_data {
 	uint32_t smtp_server;
 	long smtp_connection_to;
 	list email;
+#ifdef _WITH_SNMP_
+	int enable_traps;
+#endif
 } conf_data;
 
 /* Global vars exported */
