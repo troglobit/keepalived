@@ -29,6 +29,9 @@
 #include "utils.h"
 #include "notify.h"
 #include "main.h"
+#ifdef _WITH_SNMP_
+#include "check_snmp.h"
+#endif
 
 /* Returns the sum of all RS weight in a virtual server. */
 long unsigned
@@ -79,19 +82,27 @@ clear_service_rs(list vs_group, virtual_server * vs, list l)
 					    , ntohs(SVR_PORT(vs)));
 				notify_exec(rs->notify_down);
 			}
+#ifdef _WITH_SNMP_
+			check_snmp_rs_trap(rs, vs);
+#endif
 
 			/* Sooner or later VS will lose the quorum (if any). However,
 			 * we don't push in a sorry server then, hence the regression
 			 * is intended.
 			 */
-			if (vs->quorum_state == UP && vs->quorum_down
+			if (vs->quorum_state == UP
 			  && weigh_live_realservers(vs) < vs->quorum - vs->hysteresis) {
 				vs->quorum_state = DOWN;
-				log_message(LOG_INFO, "Executing [%s] for VS [%s:%d]"
-					    , vs->quorum_down
-					    , (vs->vsgname) ? vs->vsgname : inet_ntoa2(SVR_IP(vs), vsip)
-					    , ntohs(SVR_PORT(vs)));
-				notify_exec(vs->quorum_down);
+				if (vs->quorum_down) {
+					log_message(LOG_INFO, "Executing [%s] for VS [%s:%d]"
+						    , vs->quorum_down
+						    , (vs->vsgname) ? vs->vsgname : inet_ntoa2(SVR_IP(vs), vsip)
+						    , ntohs(SVR_PORT(vs)));
+					notify_exec(vs->quorum_down);
+				}
+#ifdef _WITH_SNMP_
+				check_snmp_quorum_trap(vs);
+#endif
 			}
 		}
 #ifdef _KRNL_2_2_
@@ -296,6 +307,9 @@ perform_svr_state(int alive, virtual_server * vs, real_server * rs)
 			       , ntohs(SVR_PORT(vs)));
 			notify_exec(rs->notify_up);
 		}
+#ifdef _WITH_SNMP_
+		check_snmp_rs_trap(rs, vs);
+#endif
 		/* If we have just gained quorum, it's time to consider notify_up. */
 		if (vs->quorum_state == DOWN
 		  && weigh_live_realservers(vs) >= vs->quorum + vs->hysteresis) {
@@ -314,6 +328,9 @@ perform_svr_state(int alive, virtual_server * vs, real_server * rs)
 					    , ntohs(SVR_PORT(vs)));
 				notify_exec(vs->quorum_up);
 			}
+#ifdef _WITH_SNMP_
+			check_snmp_quorum_trap(vs);
+#endif
 		}
 #ifdef _KRNL_2_2_
 		if (vs->nat_mask == HOST_NETMASK)
@@ -344,6 +361,9 @@ perform_svr_state(int alive, virtual_server * vs, real_server * rs)
 			       , ntohs(SVR_PORT(vs)));
 			notify_exec(rs->notify_down);
 		}
+#ifdef _WITH_SNMP_
+		check_snmp_rs_trap(rs, vs);
+#endif
 
 #ifdef _KRNL_2_2_
 		if (vs->nat_mask == HOST_NETMASK)
@@ -371,6 +391,9 @@ perform_svr_state(int alive, virtual_server * vs, real_server * rs)
 					    , ntohs(SVR_PORT(vs)));
 				notify_exec(vs->quorum_down);
 			}
+#ifdef _WITH_SNMP_
+			check_snmp_quorum_trap(vs);
+#endif
 			if (vs->s_svr) {
 				log_message(LOG_INFO,
 					    "Adding sorry server [%s:%d] to VS [%s:%d]",

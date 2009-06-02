@@ -22,10 +22,11 @@
  * Copyright (C) 2001-2009 Alexandre Cassen, <acassen@freebox.fr>
  */
 
-#include "check_snmp.h"
 #include "check_data.h"
+#include "check_snmp.h"
 #include "list.h"
 #include "ipvswrapper.h"
+#include "global_data.h"
 
 /* Magic */
 #define CHECK_SNMP_VSGROUPNAME 1
@@ -724,7 +725,7 @@ check_snmp_realserver(struct variable *vp, oid *name, size_t *length,
         return NULL;
 }
 
-static oid check_oid[] = CHECK_OID;
+static oid check_oid[] = {CHECK_OID};
 static struct variable8 check_vars[] = {
 	/* virtualServerGroupTable */
 	{CHECK_SNMP_VSGROUPNAME, ASN_OCTET_STR, RONLY,
@@ -885,4 +886,197 @@ void
 check_snmp_agent_close()
 {
 	snmp_agent_close(check_oid, OID_LENGTH(check_oid), "Healthchecker");
+}
+
+void
+check_snmp_rs_trap(real_server *rs, virtual_server *vs)
+{
+	element e;
+
+	/* OID of the notification */
+	oid notification_oid[] = { CHECK_OID, 5, 0, 1 };
+	size_t notification_oid_len = OID_LENGTH(notification_oid);
+	/* OID for snmpTrapOID.0 */
+	oid objid_snmptrap[] = { SNMPTRAP_OID };
+	size_t objid_snmptrap_len = OID_LENGTH(objid_snmptrap);
+
+	/* Other OID */
+	oid addrtype_oid[] = { CHECK_OID, 4, 1, 3 };
+	size_t addrtype_oid_len = OID_LENGTH(addrtype_oid);
+	static unsigned long addrtype = 1;
+	oid address_oid[] = { CHECK_OID, 4, 1, 4 };
+	size_t address_oid_len = OID_LENGTH(address_oid);
+	oid port_oid[] = { CHECK_OID, 4, 1, 5 };
+	size_t port_oid_len = OID_LENGTH(port_oid);
+	static unsigned long port;
+	oid status_oid[] = { CHECK_OID, 4, 1, 6 };
+	size_t status_oid_len = OID_LENGTH(status_oid);
+	static unsigned long status;
+	oid vstype_oid[] = { CHECK_OID, 3, 1, 2 };
+	size_t vstype_oid_len = OID_LENGTH(vstype_oid);
+	static unsigned long vstype;
+	oid vsgroupname_oid[] = { CHECK_OID, 3, 1, 3 };
+	size_t vsgroupname_oid_len = OID_LENGTH(vsgroupname_oid);
+	oid vsfwmark_oid[] = { CHECK_OID, 3, 1, 4 };
+	size_t vsfwmark_oid_len = OID_LENGTH(vsfwmark_oid);
+	static unsigned long vsfwmark;
+	oid vsaddrtype_oid[] = {CHECK_OID, 3, 1, 5 };
+	size_t vsaddrtype_oid_len = OID_LENGTH(vsaddrtype_oid);
+	oid vsaddress_oid[] = {CHECK_OID, 3, 1, 6 };
+	size_t vsaddress_oid_len = OID_LENGTH(vsaddress_oid);
+	oid vsport_oid[] = {CHECK_OID, 3, 1, 7 };
+	size_t vsport_oid_len = OID_LENGTH(vsport_oid);
+	static unsigned long vsport;
+	oid vsprotocol_oid[] = {CHECK_OID, 3, 1, 8 };
+	size_t vsprotocol_oid_len = OID_LENGTH(vsprotocol_oid);
+	static unsigned long vsprotocol;
+	oid realup_oid[] = {CHECK_OID, 3, 1, 21 };
+	size_t realup_oid_len = OID_LENGTH(realup_oid);
+	static unsigned long realup;
+	oid realtotal_oid[] = {CHECK_OID, 3, 1, 20 };
+	size_t realtotal_oid_len = OID_LENGTH(realtotal_oid);
+	static unsigned long realtotal;
+	oid quorumstatus_oid[] = {CHECK_OID, 3, 1, 23 };
+	size_t quorumstatus_oid_len = OID_LENGTH(quorumstatus_oid);
+	static unsigned long quorumstatus;
+	oid quorum_oid[] = {CHECK_OID, 3, 1, 22 };
+	size_t quorum_oid_len = OID_LENGTH(quorum_oid);
+	static unsigned long quorum;
+
+	netsnmp_variable_list *notification_vars = NULL;
+
+	if (!data->enable_traps) return;
+
+	if (!rs)
+		notification_oid[notification_oid_len - 1] = 2;
+
+	/* Initialize data */
+	if (LIST_ISEMPTY(vs->rs))
+		realtotal = 0;
+	else
+		realtotal = LIST_SIZE(vs->rs);
+	realup = 0;
+	if (!LIST_ISEMPTY(vs->rs))
+		for (e = LIST_HEAD(vs->rs); e; ELEMENT_NEXT(e))
+			if (((real_server *)ELEMENT_DATA(e))->alive)
+				realup++;
+
+	/* snmpTrapOID */
+	snmp_varlist_add_variable(&notification_vars,
+				  objid_snmptrap, objid_snmptrap_len,
+				  ASN_OBJECT_ID,
+				  (u_char *) notification_oid,
+				  notification_oid_len * sizeof(oid));
+	if (rs) {
+		/* realServerAddrType */
+		snmp_varlist_add_variable(&notification_vars,
+					  addrtype_oid, addrtype_oid_len,
+					  ASN_INTEGER,
+					  (u_char *)&addrtype,
+					  sizeof(addrtype));
+		/* realServerAddress */
+		snmp_varlist_add_variable(&notification_vars,
+					  address_oid, address_oid_len,
+					  ASN_OCTET_STR,
+					  (u_char *)&rs->addr_ip,
+					  4);
+		/* realServerPort */
+		port = htons(rs->addr_port);
+		snmp_varlist_add_variable(&notification_vars,
+					  port_oid, port_oid_len,
+					  ASN_UNSIGNED,
+					  (u_char *)&port,
+					  sizeof(port));
+		/* realServerStatus */
+		status = rs->alive?1:2;
+		snmp_varlist_add_variable(&notification_vars,
+					  status_oid, status_oid_len,
+					  ASN_INTEGER,
+					  (u_char *)&status,
+					  sizeof(status));
+	}
+
+	/* virtualServerType */
+	if (vs->vsgname)
+		vstype = 3;
+	else if (vs->vfwmark)
+		vstype = 1;
+	else
+		vstype = 2;
+	snmp_varlist_add_variable(&notification_vars,
+				  vstype_oid, vstype_oid_len,
+				  ASN_INTEGER,
+				  (u_char *)&vstype,
+				  sizeof(vstype));
+	if (vs->vsgname) {
+		/* virtualServerNameOfGroup */
+		snmp_varlist_add_variable(&notification_vars,
+					  vsgroupname_oid, vsgroupname_oid_len,
+					  ASN_OCTET_STR,
+					  (u_char *)vs->vsgname,
+					  strlen(vs->vsgname));
+	} else if (vs->vfwmark) {
+		vsfwmark = vs->vfwmark;
+		snmp_varlist_add_variable(&notification_vars,
+					  vsfwmark_oid, vsfwmark_oid_len,
+					  ASN_UNSIGNED,
+					  (u_char *)&vsfwmark,
+					  sizeof(vsfwmark));
+	} else {
+		snmp_varlist_add_variable(&notification_vars,
+					  vsaddrtype_oid, vsaddrtype_oid_len,
+					  ASN_INTEGER,
+					  (u_char *)&addrtype,
+					  sizeof(addrtype));
+		snmp_varlist_add_variable(&notification_vars,
+					  vsaddress_oid, vsaddress_oid_len,
+					  ASN_OCTET_STR,
+					  (u_char *)&vs->addr_ip,
+					  4);
+		vsport = htons(vs->addr_port);
+		snmp_varlist_add_variable(&notification_vars,
+					  vsport_oid, vsport_oid_len,
+					  ASN_UNSIGNED,
+					  (u_char *)&vsport,
+					  sizeof(vsport));
+	}
+	vsprotocol = (vs->service_type == IPPROTO_TCP)?1:2;
+	snmp_varlist_add_variable(&notification_vars,
+				  vsprotocol_oid, vsprotocol_oid_len,
+				  ASN_INTEGER,
+				  (u_char *)&vsprotocol,
+				  sizeof(vsprotocol));
+	if (!rs) {
+		quorumstatus = vs->quorum_state?1:2;
+		snmp_varlist_add_variable(&notification_vars,
+					  quorumstatus_oid, quorumstatus_oid_len,
+					  ASN_INTEGER,
+					  (u_char *)&quorumstatus,
+					  sizeof(quorumstatus));
+		quorum = vs->quorum;
+		snmp_varlist_add_variable(&notification_vars,
+					  quorum_oid, quorum_oid_len,
+					  ASN_UNSIGNED,
+					  (u_char *)&quorum,
+					  sizeof(quorum));
+	}
+	snmp_varlist_add_variable(&notification_vars,
+				  realup_oid, realup_oid_len,
+				  ASN_UNSIGNED,
+				  (u_char *)&realup,
+				  sizeof(realup));
+	snmp_varlist_add_variable(&notification_vars,
+				  realtotal_oid, realtotal_oid_len,
+				  ASN_UNSIGNED,
+				  (u_char *)&realtotal,
+				  sizeof(realtotal));
+
+	send_v2trap(notification_vars);
+	snmp_free_varbind(notification_vars);
+}
+
+void
+check_snmp_quorum_trap(virtual_server *vs)
+{
+	check_snmp_rs_trap(NULL, vs);
 }

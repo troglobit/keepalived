@@ -28,9 +28,11 @@
 
 #include "snmp.h"
 
-#define CHECK_OID {KEEPALIVED_OID, 3}
+#define CHECK_OID KEEPALIVED_OID, 3
 
 extern void check_snmp_agent_init(void);
 extern void check_snmp_agent_close(void);
+extern void check_snmp_rs_trap(real_server *, virtual_server *);
+extern void check_snmp_quorum_trap(virtual_server *);
 
 #endif
