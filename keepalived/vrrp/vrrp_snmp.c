@@ -551,14 +551,29 @@ vrrp_snmp_syncgroupmember(struct variable *vp, oid *name, size_t *length,
 	return (u_char*)binstance;
 }
 
+static vrrp_rt*
+_get_instance(oid *name, size_t name_len)
+{
+	int instance;
+	element e;
+	vrrp_rt *vrrp = NULL;
+
+	if (name_len < 1) return NULL;
+	instance = name[name_len - 1];
+	if (LIST_ISEMPTY(vrrp_data->vrrp)) return NULL;
+	for (e = LIST_HEAD(vrrp_data->vrrp); e; ELEMENT_NEXT(e)) {
+		vrrp = ELEMENT_DATA(e);
+		if (--instance == 0) break;
+	}
+	return vrrp;
+}
+
 static int
 vrrp_snmp_instance_priority(int action,
 			    u_char *var_val, u_char var_val_type, size_t var_val_len,
 			    u_char *statP, oid *name, size_t name_len)
 {
-	int instance;
 	vrrp_rt *vrrp = NULL;
-	element e;
 	switch (action) {
 	case RESERVE1:
 		/* Check that the proposed priority is acceptable */
@@ -572,15 +587,7 @@ vrrp_snmp_instance_priority(int action,
 	case RESERVE2:		/* Check that we can find the instance. We should. */
 	case COMMIT:
 		/* Find the instance */
-		if (name_len < 1) return SNMP_ERR_NOSUCHNAME;
-		instance = name[name_len - 1];
-		if (LIST_ISEMPTY(vrrp_data->vrrp))
-			return SNMP_ERR_NOSUCHNAME;
-		for (e = LIST_HEAD(vrrp_data->vrrp); e; ELEMENT_NEXT(e)) {
-			vrrp = ELEMENT_DATA(e);
-			if (--instance == 0)
-				break;
-		}
+		vrrp = _get_instance(name, name_len);
 		if (!vrrp)
 			return SNMP_ERR_NOSUCHNAME;
 		if (action == RESERVE2)
@@ -607,9 +614,7 @@ vrrp_snmp_instance_preempt(int action,
 			   u_char *var_val, u_char var_val_type, size_t var_val_len,
 			   u_char *statP, oid *name, size_t name_len)
 {
-	int instance;
 	vrrp_rt *vrrp = NULL;
-	element e;
 	switch (action) {
 	case RESERVE1:
 		/* Check that the proposed value is acceptable */
@@ -628,13 +633,7 @@ vrrp_snmp_instance_preempt(int action,
 	case RESERVE2:		/* Check that we can find the instance. We should. */
 	case COMMIT:
 		/* Find the instance */
-		if (name_len < 1) return SNMP_ERR_NOSUCHNAME;
-		instance = name[name_len - 1];
-		if (LIST_ISEMPTY(vrrp_data->vrrp)) return SNMP_ERR_NOSUCHNAME;
-		for (e = LIST_HEAD(vrrp_data->vrrp); e; ELEMENT_NEXT(e)) {
-			vrrp = ELEMENT_DATA(e);
-			if (--instance == 0) break;
-		}
+		vrrp = _get_instance(name, name_len);
 		if (!vrrp) return SNMP_ERR_NOSUCHNAME;
 		if (action == RESERVE2)
 			break;
