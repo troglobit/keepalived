@@ -575,6 +575,112 @@ vrrp_snmp_syncgroupmember(struct variable *vp, oid *name, size_t *length,
 	return (u_char*)binstance;
 }
 
+static vrrp_rt*
+_get_instance(oid *name, size_t name_len)
+{
+	int instance;
+	element e;
+	vrrp_rt *vrrp = NULL;
+
+	if (name_len < 1) return NULL;
+	instance = name[name_len - 1];
+	if (LIST_ISEMPTY(vrrp_data->vrrp)) return NULL;
+	for (e = LIST_HEAD(vrrp_data->vrrp); e; ELEMENT_NEXT(e)) {
+		vrrp = ELEMENT_DATA(e);
+		if (--instance == 0) break;
+	}
+	return vrrp;
+}
+
+static int
+vrrp_snmp_instance_priority(int action,
+			    u_char *var_val, u_char var_val_type, size_t var_val_len,
+			    u_char *statP, oid *name, size_t name_len)
+{
+	vrrp_rt *vrrp = NULL;
+	switch (action) {
+	case RESERVE1:
+		/* Check that the proposed priority is acceptable */
+		if (var_val_type != ASN_INTEGER)
+			return SNMP_ERR_WRONGTYPE;
+		if (var_val_len > sizeof(long))
+			return SNMP_ERR_WRONGLENGTH;
+		if (VRRP_IS_BAD_PRIORITY((long)(*var_val)))
+			return SNMP_ERR_WRONGVALUE;
+		break;
+	case RESERVE2:		/* Check that we can find the instance. We should. */
+	case COMMIT:
+		/* Find the instance */
+		vrrp = _get_instance(name, name_len);
+		if (!vrrp)
+			return SNMP_ERR_NOSUCHNAME;
+		if (action == RESERVE2)
+			break;
+		/* Commit: change values. There is no way to fail. */
+		log_message(LOG_INFO,
+			    "VRRP_Instance(%s) base priority changed from"
+			    " %d to %d via SNMP.",
+			    vrrp->iname, vrrp->base_priority, (long)(*var_val));
+		vrrp->base_priority = (long)(*var_val);
+		/* If we the instance is not part of a sync group, the
+		   effective priority will be recomputed by some
+		   thread. Otherwise, we should set it equal to the
+		   base priority. */
+		if (vrrp->sync)
+			vrrp->effective_priority = vrrp->base_priority;
+		break;
+	}
+	return SNMP_ERR_NOERROR;
+}
+
+static int
+vrrp_snmp_instance_preempt(int action,
+			   u_char *var_val, u_char var_val_type, size_t var_val_len,
+			   u_char *statP, oid *name, size_t name_len)
+{
+	vrrp_rt *vrrp = NULL;
+	switch (action) {
+	case RESERVE1:
+		/* Check that the proposed value is acceptable */
+		if (var_val_type != ASN_INTEGER)
+			return SNMP_ERR_WRONGTYPE;
+		if (var_val_len > sizeof(long))
+			return SNMP_ERR_WRONGLENGTH;
+		switch ((long)(*var_val)) {
+		case 1:		/* enable preemption */
+		case 2:		/* disable preemption */
+			break;
+		default:
+			return SNMP_ERR_WRONGVALUE;
+		}
+		break;
+	case RESERVE2:		/* Check that we can find the instance. We should. */
+	case COMMIT:
+		/* Find the instance */
+		vrrp = _get_instance(name, name_len);
+		if (!vrrp) return SNMP_ERR_NOSUCHNAME;
+		if (action == RESERVE2)
+			break;
+		/* Commit: change values. There is no way to fail. */
+		switch ((long)(*var_val)) {
+		case 1:
+			log_message(LOG_INFO,
+				    "VRRP_Instance(%s) preemption enabled with SNMP",
+				    vrrp->iname);
+			vrrp->nopreempt = 0;
+			break;
+		case 2:
+			log_message(LOG_INFO,
+				    "VRRP_Instance(%s) preemption disabled with SNMP",
+				    vrrp->iname);
+			vrrp->nopreempt = 1;
+			break;
+		}
+		break;
+	}
+	return SNMP_ERR_NOERROR;
+}
+
 static u_char*
 vrrp_snmp_instance(struct variable *vp, oid *name, size_t *length,
 		   int exact, size_t *var_len, WriteMethod **write_method)
@@ -605,6 +711,7 @@ vrrp_snmp_instance(struct variable *vp, oid *name, size_t *length,
 		return (u_char *)&long_ret;
 	case VRRP_SNMP_INSTANCE_BASEPRIORITY:
 		long_ret = rt->base_priority;
+		*write_method = vrrp_snmp_instance_priority;
 		return (u_char *)&long_ret;
 	case VRRP_SNMP_INSTANCE_EFFECTIVEPRIORITY:
 		long_ret = rt->effective_priority;
@@ -623,6 +730,7 @@ vrrp_snmp_instance(struct variable *vp, oid *name, size_t *length,
 		return (u_char *)&long_ret;
 	case VRRP_SNMP_INSTANCE_PREEMPT:
 		long_ret = rt->nopreempt?2:1;
+		*write_method = vrrp_snmp_instance_preempt;
 		return (u_char *)&long_ret;
 	case VRRP_SNMP_INSTANCE_PREEMPTDELAY:
 		long_ret = rt->preempt_delay / TIMER_HZ;
@@ -900,7 +1008,7 @@ static struct variable8 vrrp_vars[] = {
 	 vrrp_snmp_instance, 3, {3, 1, 5}},
 	{VRRP_SNMP_INSTANCE_WANTEDSTATE, ASN_INTEGER, RONLY,
 	 vrrp_snmp_instance, 3, {3, 1, 6}},
-	{VRRP_SNMP_INSTANCE_BASEPRIORITY, ASN_INTEGER, RONLY,
+	{VRRP_SNMP_INSTANCE_BASEPRIORITY, ASN_INTEGER, RWRITE,
 	 vrrp_snmp_instance, 3, {3, 1, 7}},
 	{VRRP_SNMP_INSTANCE_EFFECTIVEPRIORITY, ASN_INTEGER, RONLY,
 	 vrrp_snmp_instance, 3, {3, 1, 8}},
@@ -912,7 +1020,7 @@ static struct variable8 vrrp_vars[] = {
 	 vrrp_snmp_instance, 3, {3, 1, 11}},
 	{VRRP_SNMP_INSTANCE_ADVERTISEMENTSINT, ASN_UNSIGNED, RONLY,
 	 vrrp_snmp_instance, 3, {3, 1, 12}},
-	{VRRP_SNMP_INSTANCE_PREEMPT, ASN_INTEGER, RONLY,
+	{VRRP_SNMP_INSTANCE_PREEMPT, ASN_INTEGER, RWRITE,
 	 vrrp_snmp_instance, 3, {3, 1, 13}},
 	{VRRP_SNMP_INSTANCE_PREEMPTDELAY, ASN_UNSIGNED, RONLY,
 	 vrrp_snmp_instance, 3, {3, 1, 14}},
