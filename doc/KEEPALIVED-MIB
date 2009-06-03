@@ -407,11 +407,14 @@ vrrpInstanceWantedState OBJECT-TYPE
 
 vrrpInstanceBasePriority OBJECT-TYPE
     SYNTAX Integer32
-    MAX-ACCESS read-only
+    MAX-ACCESS read-write
     STATUS current
     DESCRIPTION
 	"Base priority (as defined in the configuration file) for this
-	 VRRP instance."
+	 VRRP instance.
+
+	 This value can be modified to force the virtual router instance to become backup or master.
+	 "
     ::= { vrrpInstanceEntry 7 }
 
 vrrpInstanceEffectivePriority OBJECT-TYPE

@@ -551,6 +551,56 @@ vrrp_snmp_syncgroupmember(struct variable *vp, oid *name, size_t *length,
 	return (u_char*)binstance;
 }
 
+static int
+vrrp_snmp_instance_priority(int action,
+			    u_char *var_val, u_char var_val_type, size_t var_val_len,
+			    u_char *statP, oid *name, size_t name_len)
+{
+	int instance;
+	vrrp_rt *vrrp = NULL;
+	element e;
+	switch (action) {
+	case RESERVE1:
+		/* Check that the proposed priority is acceptable */
+		if (var_val_type != ASN_INTEGER)
+			return SNMP_ERR_WRONGTYPE;
+		if (var_val_len > sizeof(long))
+			return SNMP_ERR_WRONGLENGTH;
+		if (VRRP_IS_BAD_PRIORITY((long)(*var_val)))
+			return SNMP_ERR_WRONGVALUE;
+		break;
+	case RESERVE2:		/* Check that we can find the instance. We should. */
+	case COMMIT:
+		/* Find the instance */
+		instance = name[name_len - 1];
+		if (LIST_ISEMPTY(vrrp_data->vrrp))
+			return SNMP_ERR_NOSUCHNAME;
+		for (e = LIST_HEAD(vrrp_data->vrrp); e; ELEMENT_NEXT(e)) {
+			vrrp = ELEMENT_DATA(e);
+			if (--instance == 0)
+				break;
+		}
+		if (!vrrp)
+			return SNMP_ERR_NOSUCHNAME;
+		if (action == RESERVE2)
+			break;
+		/* Commit: change values. There is no way to fail. */
+		log_message(LOG_INFO,
+			    "VRRP_Instance(%s) base priority changed from"
+			    " %d to %d via SNMP.",
+			    vrrp->iname, vrrp->base_priority, (long)(*var_val));
+		vrrp->base_priority = (long)(*var_val);
+		/* If we the instance is not part of a sync group, the
+		   effective priority will be recomputed by some
+		   thread. Otherwise, we should set it equal to the
+		   base priority. */
+		if (vrrp->sync)
+			vrrp->effective_priority = vrrp->base_priority;
+		break;
+	}
+	return SNMP_ERR_NOERROR;
+}
+
 static u_char*
 vrrp_snmp_instance(struct variable *vp, oid *name, size_t *length,
 		   int exact, size_t *var_len, WriteMethod **write_method)
@@ -581,6 +631,7 @@ vrrp_snmp_instance(struct variable *vp, oid *name, size_t *length,
 		return (u_char *)&long_ret;
 	case VRRP_SNMP_INSTANCE_BASEPRIORITY:
 		long_ret = rt->base_priority;
+		*write_method = vrrp_snmp_instance_priority;
 		return (u_char *)&long_ret;
 	case VRRP_SNMP_INSTANCE_EFFECTIVEPRIORITY:
 		long_ret = rt->effective_priority;
@@ -876,7 +927,7 @@ static struct variable8 vrrp_vars[] = {
 	 vrrp_snmp_instance, 3, {3, 1, 5}},
 	{VRRP_SNMP_INSTANCE_WANTEDSTATE, ASN_INTEGER, RONLY,
 	 vrrp_snmp_instance, 3, {3, 1, 6}},
-	{VRRP_SNMP_INSTANCE_BASEPRIORITY, ASN_INTEGER, RONLY,
+	{VRRP_SNMP_INSTANCE_BASEPRIORITY, ASN_INTEGER, RWRITE,
 	 vrrp_snmp_instance, 3, {3, 1, 7}},
 	{VRRP_SNMP_INSTANCE_EFFECTIVEPRIORITY, ASN_INTEGER, RONLY,
 	 vrrp_snmp_instance, 3, {3, 1, 8}},
