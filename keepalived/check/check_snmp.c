@@ -26,6 +26,7 @@
 #include "check_snmp.h"
 #include "list.h"
 #include "ipvswrapper.h"
+#include "ipwrapper.h"
 #include "global_data.h"
 
 /* Magic */
@@ -486,6 +487,61 @@ check_snmp_virtualserver(struct variable *vp, oid *name, size_t *length,
         return NULL;
 }
 
+static int
+check_snmp_realserver_weight(int action,
+			     u_char *var_val, u_char var_val_type, size_t var_val_len,
+			     u_char *statP, oid *name, size_t name_len)
+{
+	element e1, e2;
+	virtual_server *vs = NULL;
+	real_server *rs = NULL;
+	int ivs, irs;
+	switch (action) {
+	case RESERVE1:
+		/* Check that the proposed value is acceptable */
+		if (var_val_type != ASN_INTEGER)
+			return SNMP_ERR_WRONGTYPE;
+		if (var_val_len > sizeof(long))
+			return SNMP_ERR_WRONGLENGTH;
+		if ((long)(*var_val) < 0)
+			return SNMP_ERR_WRONGVALUE;
+		break;
+	case RESERVE2:		/* Check that we can find the instance. We should. */
+	case COMMIT:
+		/* Find the instance */
+		if (name_len < 2) return SNMP_ERR_NOSUCHNAME;
+		irs = name[name_len - 1];
+		ivs = name[name_len - 2];
+		if (LIST_ISEMPTY(check_data->vs)) return SNMP_ERR_NOSUCHNAME;
+		for (e1 = LIST_HEAD(check_data->vs); e1; ELEMENT_NEXT(e1)) {
+			vs = ELEMENT_DATA(e1);
+			if (--ivs == 0) {
+				if (LIST_ISEMPTY(vs->rs)) return SNMP_ERR_NOSUCHNAME;
+				if (vs->s_svr) {
+					/* We don't want to set weight
+					   of sorry server */
+					rs = NULL;
+					if (--irs == 0) break;
+				}
+				for (e2 = LIST_HEAD(vs->rs); e2; ELEMENT_NEXT(e2)) {
+					rs = ELEMENT_DATA(e2);
+					if (--irs == 0) break;
+				}
+				break;
+			}
+		}
+		/* Did not find a RS or this is a sorry server (this
+		   should not happen) */
+		if (!rs) return SNMP_ERR_NOSUCHNAME;
+		if (action == RESERVE2)
+			break;
+		/* Commit: change values. There is no way to fail. */
+		update_svr_wgt((long)(*var_val), vs, rs);
+		break;
+	}
+	return SNMP_ERR_NOERROR;
+}
+
 static u_char*
 check_snmp_realserver(struct variable *vp, oid *name, size_t *length,
 		      int exact, size_t *var_len, WriteMethod **write_method)
@@ -623,6 +679,7 @@ check_snmp_realserver(struct variable *vp, oid *name, size_t *length,
 	case CHECK_SNMP_RSWEIGHT:
 		if (btype == STATE_RS_SORRY) break;
 		long_ret = be->weight;
+		*write_method = check_snmp_realserver_weight;
 		return (u_char*)&long_ret;
 #ifdef _KRNL_2_6_
 	case CHECK_SNMP_RSUPPERCONNECTIONLIMIT:
@@ -828,7 +885,7 @@ static struct variable8 check_vars[] = {
 	 check_snmp_realserver, 3, {4, 1, 5}},
 	{CHECK_SNMP_RSSTATUS, ASN_INTEGER, RONLY,
 	 check_snmp_realserver, 3, {4, 1, 6}},
-	{CHECK_SNMP_RSWEIGHT, ASN_INTEGER, RONLY,
+	{CHECK_SNMP_RSWEIGHT, ASN_INTEGER, RWRITE,
 	 check_snmp_realserver, 3, {4, 1, 7}},
 #ifdef _KRNL_2_6_
 	{CHECK_SNMP_RSUPPERCONNECTIONLIMIT, ASN_UNSIGNED, RONLY,
