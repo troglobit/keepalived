@@ -74,4 +74,4 @@ ipwrapper.o: ipwrapper.c ../include/ipwrapper.h ../../lib/memory.h \
 ipvswrapper.o: ipvswrapper.c ../include/ipvswrapper.h ../../lib/utils.h \
   ../../lib/memory.h
 check_snmp.o: check_snmp.c ../include/check_snmp.h ../include/check_data.h \
-  ../../lib/list.h ../include/ipvswrapper.h ../include/global_data.h
+  ../../lib/list.h ../include/ipvswrapper.h ../include/ipwrapper.h ../include/global_data.h

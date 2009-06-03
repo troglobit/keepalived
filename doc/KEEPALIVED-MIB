@@ -1689,10 +1689,12 @@ realServerStatus OBJECT-TYPE
 
 realServerWeight OBJECT-TYPE
     SYNTAX Integer32
-    MAX-ACCESS read-only
+    MAX-ACCESS read-write
     STATUS current
     DESCRIPTION
-	"Weight of this real server."
+	"Weight of this real server.
+
+	This value can be set to 0 to disable the real server."
     ::= { realServerEntry 7 }
 
 realServerUpperConnectionLimit OBJECT-TYPE
@@ -1713,16 +1715,11 @@ realServerLowerConnectionLimit OBJECT-TYPE
 
 realServerActionWhenDown OBJECT-TYPE
     SYNTAX INTEGER { remove(1), inhibit(2) }
-    MAX-ACCESS read-write
+    MAX-ACCESS read-only
     STATUS current
     DESCRIPTION
 	"What action is performed when this server is down. Its weight
-	can be set to 0 (inhibit) or it can be removed from the pool.
-
-	Setting this value while the real server is down can exhibit
-	unknown effects on 2.2 kernel. It seems a better strategy to
-	use this option in the configuration file.
-	"
+	can be set to 0 (inhibit) or it can be removed from the pool."
     ::= { realServerEntry 10 }
 
 realServerNotifyUp OBJECT-TYPE
