@@ -572,6 +572,7 @@ vrrp_snmp_instance_priority(int action,
 	case RESERVE2:		/* Check that we can find the instance. We should. */
 	case COMMIT:
 		/* Find the instance */
+		if (name_len < 1) return SNMP_ERR_NOSUCHNAME;
 		instance = name[name_len - 1];
 		if (LIST_ISEMPTY(vrrp_data->vrrp))
 			return SNMP_ERR_NOSUCHNAME;
@@ -627,6 +628,7 @@ vrrp_snmp_instance_preempt(int action,
 	case RESERVE2:		/* Check that we can find the instance. We should. */
 	case COMMIT:
 		/* Find the instance */
+		if (name_len < 1) return SNMP_ERR_NOSUCHNAME;
 		instance = name[name_len - 1];
 		if (LIST_ISEMPTY(vrrp_data->vrrp)) return SNMP_ERR_NOSUCHNAME;
 		for (e = LIST_HEAD(vrrp_data->vrrp); e; ELEMENT_NEXT(e)) {
