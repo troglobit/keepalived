@@ -486,6 +486,73 @@ check_snmp_virtualserver(struct variable *vp, oid *name, size_t *length,
         return NULL;
 }
 
+static real_server *
+_get_real(oid *name, size_t name_len)
+{
+	element e1, e2;
+	virtual_server *vs = NULL;
+	real_server *rs = NULL;
+	int ivs, irs;
+	if (name_len < 2) return NULL;
+	irs = name[name_len - 1];
+	ivs = name[name_len - 2];
+	if (LIST_ISEMPTY(check_data->vs)) return NULL;
+	for (e1 = LIST_HEAD(check_data->vs); e1; ELEMENT_NEXT(e1)) {
+		vs = ELEMENT_DATA(e1);
+		if (--ivs == 0) {
+			if (LIST_ISEMPTY(vs->rs)) return NULL;
+			for (e2 = LIST_HEAD(vs->rs); e2; ELEMENT_NEXT(e2)) {
+				rs = ELEMENT_DATA(e2);
+				if (--irs == 0) break;
+			}
+			break;
+		}
+	}
+	return rs;
+}
+
+static int
+check_snmp_realserver_inhibit(int action,
+			      u_char *var_val, u_char var_val_type, size_t var_val_len,
+			      u_char *statP, oid *name, size_t name_len)
+{
+	real_server *rs = NULL;
+	switch (action) {
+	case RESERVE1:
+		/* Check that the proposed value is acceptable */
+		if (var_val_type != ASN_INTEGER)
+			return SNMP_ERR_WRONGTYPE;
+		if (var_val_len > sizeof(long))
+			return SNMP_ERR_WRONGLENGTH;
+		switch ((long)(*var_val)) {
+		case 1:		/* remove */
+		case 2:		/* inhibit */
+			break;
+		default:
+			return SNMP_ERR_WRONGVALUE;
+		}
+		break;
+	case RESERVE2:		/* Check that we can find the instance. We should. */
+	case COMMIT:
+		/* Find the instance */
+		rs = _get_real(name, name_len);
+		if (!rs) return SNMP_ERR_NOSUCHNAME;
+		if (action == RESERVE2)
+			break;
+		/* Commit: change values. There is no way to fail. */
+		switch ((long)(*var_val)) {
+		case 1:
+			rs->inhibit = 0;
+			break;
+		case 2:
+			rs->inhibit = 1;
+			break;
+		}
+		break;
+	}
+	return SNMP_ERR_NOERROR;
+}
+
 static u_char*
 check_snmp_realserver(struct variable *vp, oid *name, size_t *length,
 		      int exact, size_t *var_len, WriteMethod **write_method)
@@ -638,6 +705,7 @@ check_snmp_realserver(struct variable *vp, oid *name, size_t *length,
 	case CHECK_SNMP_RSACTIONWHENDOWN:
 		if (btype == STATE_RS_SORRY) break;
 		long_ret = be->inhibit?2:1;
+		*write_method = check_snmp_realserver_inhibit;
 		return (u_char*)&long_ret;
 	case CHECK_SNMP_RSNOTIFYUP:
 		if (btype == STATE_RS_SORRY) break;
@@ -835,7 +903,7 @@ static struct variable8 check_vars[] = {
 	{CHECK_SNMP_RSLOWERCONNECTIONLIMIT, ASN_UNSIGNED, RONLY,
 	 check_snmp_realserver, 3, {4, 1, 9}},
 #endif
-	{CHECK_SNMP_RSACTIONWHENDOWN, ASN_INTEGER, RONLY,
+	{CHECK_SNMP_RSACTIONWHENDOWN, ASN_INTEGER, RWRITE,
 	 check_snmp_realserver, 3, {4, 1, 10}},
 	{CHECK_SNMP_RSNOTIFYUP, ASN_OCTET_STR, RONLY,
 	 check_snmp_realserver, 3, {4, 1, 11}},

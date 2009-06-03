@@ -413,7 +413,8 @@ vrrpInstanceBasePriority OBJECT-TYPE
 	"Base priority (as defined in the configuration file) for this
 	 VRRP instance.
 
-	 This value can be modified to force the virtual router instance to become backup or master.
+	 This value can be modified to force the virtual router
+	 instance to become backup or master.
 	 "
     ::= { vrrpInstanceEntry 7 }
 
@@ -1712,11 +1713,16 @@ realServerLowerConnectionLimit OBJECT-TYPE
 
 realServerActionWhenDown OBJECT-TYPE
     SYNTAX INTEGER { remove(1), inhibit(2) }
-    MAX-ACCESS read-only
+    MAX-ACCESS read-write
     STATUS current
     DESCRIPTION
 	"What action is performed when this server is down. Its weight
-	can be set to 0 (inhibit) or it can be removed from the pool."
+	can be set to 0 (inhibit) or it can be removed from the pool.
+
+	Setting this value while the real server is down can exhibit
+	unknown effects on 2.2 kernel. It seems a better strategy to
+	use this option in the configuration file.
+	"
     ::= { realServerEntry 10 }
 
 realServerNotifyUp OBJECT-TYPE
