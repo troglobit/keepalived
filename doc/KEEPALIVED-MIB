@@ -149,14 +149,10 @@ emailAddress OBJECT-TYPE
 
 trapEnable OBJECT-TYPE
     SYNTAX INTEGER { enabled(1), disabled(2) }
-    MAX-ACCESS read-write
+    MAX-ACCESS read-only
     STATUS current
     DESCRIPTION
-	"Indicate whether traps should be sent for various events.
-
-	When changing this value using SNMP agent, the change will not
-	be permanent. Only using enable_traps in configuration file
-	will make this change permanent."
+	"Indicate whether traps should be sent for various events."
     ::= { global 4 }
 
 -- ----------------------------------------------------------------------

@@ -96,34 +96,6 @@ snmp_header_list_table(struct variable *vp, oid *name, size_t *length,
 #define SNMP_MAIL_EMAILADDRESS 7
 #define SNMP_TRAPS 8
 
-static int
-snmp_write_traps(int action, u_char *var_val, u_char var_val_type, size_t var_val_len,
-		 u_char *statP, oid *name, size_t name_len)
-{
-	static int old;
-	switch (action) {
-        case RESERVE1:
-		if (var_val_type != ASN_INTEGER)
-			return SNMP_ERR_WRONGTYPE;
-		if (var_val_len > sizeof(long))
-			return SNMP_ERR_WRONGLENGTH;
-		if (!(((long) (*var_val) == 1) ||
-		      ((long) (*var_val) == 2)))
-			return SNMP_ERR_WRONGVALUE;
-		break;
-        case ACTION:
-		old = data->enable_traps;
-		data->enable_traps = ((long) *var_val == 1)?1:0;
-		break;
-	case UNDO:
-		data->enable_traps = old;
-		break;
-	default:
-		break;
-	}
-	return SNMP_ERR_NOERROR;
-}
-
 static u_char*
 snmp_scalar(struct variable *vp, oid *name, size_t *length,
 		 int exact, size_t *var_len, WriteMethod **write_method)
@@ -154,7 +126,6 @@ snmp_scalar(struct variable *vp, oid *name, size_t *length,
 		return (u_char *)data->email_from;
 	case SNMP_TRAPS:
 		long_ret = data->enable_traps?1:2;
-		*write_method = snmp_write_traps;
 		return (u_char *)&long_ret;
 	default:
 		break;
@@ -196,7 +167,7 @@ static struct variable8 global_vars[] = {
 	/* emailTable */
 	{SNMP_MAIL_EMAILADDRESS, ASN_OCTET_STR, RONLY, snmp_mail, 4, {3, 5, 1, 2}},
 	/* trapEnable */
-	{SNMP_TRAPS, ASN_INTEGER, RWRITE, snmp_scalar, 1, {4}},
+	{SNMP_TRAPS, ASN_INTEGER, RONLY, snmp_scalar, 1, {4}},
 };
 
 void
