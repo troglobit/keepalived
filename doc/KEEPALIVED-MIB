@@ -462,7 +462,7 @@ vrrpInstanceAdvertisementsInt OBJECT-TYPE
 
 vrrpInstancePreempt OBJECT-TYPE
     SYNTAX INTEGER { preempt(1), noPreempt(2) }
-    MAX-ACCESS read-only
+    MAX-ACCESS read-write
     STATUS current
     DESCRIPTION
 	"Will a higher priority advertisement preempt a lower instance?"
