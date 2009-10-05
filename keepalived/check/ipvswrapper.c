@@ -761,10 +761,12 @@ ipvs_update_stats(virtual_server *vs)
 		vs->s_svr->activeconns =
 			vs->s_svr->inactconns = vs->s_svr->persistconns = 0;
 	}
-	for (e = LIST_HEAD(vs->rs); e; ELEMENT_NEXT(e)) {
-		rs = ELEMENT_DATA(e);
-		memset(&rs->stats, 0, sizeof(rs->stats));
-		rs->activeconns = rs->inactconns = rs->persistconns = 0;
+	if (!LIST_ISEMPTY(vs->rs)) {
+		for (e = LIST_HEAD(vs->rs); e; ELEMENT_NEXT(e)) {
+			rs = ELEMENT_DATA(e);
+			memset(&rs->stats, 0, sizeof(rs->stats));
+			rs->activeconns = rs->inactconns = rs->persistconns = 0;
+		}
 	}
 	/* FSM: at each transition, we process "serv" if it is not NULL */
 	while (state != UPDATE_STATS_END) {
@@ -773,8 +775,11 @@ ipvs_update_stats(virtual_server *vs)
 		case UPDATE_STATS_INIT:
 			/* We need to know the next state to reach */
 			if (vs->vsgname) {
-				vsg = ipvs_get_group_by_name(vs->vsgname,
-							     check_data->vs_group);
+				if (!LIST_ISEMPTY(check_data->vs_group))
+					vsg = ipvs_get_group_by_name(vs->vsgname,
+								     check_data->vs_group);
+				else
+					vsg = NULL;
 				if (!vsg)
 					state = UPDATE_STATS_END;
 				else {
@@ -871,7 +876,7 @@ ipvs_update_stats(virtual_server *vs)
 			    (ntohs(vs->s_svr->addr_port) ==
 			     ntohs(dests->entrytable[i].port)))
 				rs = vs->s_svr;
-			else
+			else if (!LIST_ISEMPTY(vs->rs))
 				/* Search for a match in the list of real servers */
 				for (e = LIST_HEAD(vs->rs); e; ELEMENT_NEXT(e)) {
 					rs = ELEMENT_DATA(e);
