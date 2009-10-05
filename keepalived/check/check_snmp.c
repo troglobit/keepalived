@@ -590,6 +590,7 @@ check_snmp_realserver(struct variable *vp, oid *name, size_t *length,
 			case STATE_RS_REGULAR_FIRST:
 				if (LIST_ISEMPTY(vs->rs)) {
 					e = NULL;
+					state = STATE_RS_END;
 					break;
 				}
 				e2 = LIST_HEAD(vs->rs);
