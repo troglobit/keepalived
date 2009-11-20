@@ -517,6 +517,12 @@ check_snmp_realserver_weight(int action,
 			vs = ELEMENT_DATA(e1);
 			if (--ivs == 0) {
 				if (LIST_ISEMPTY(vs->rs)) return SNMP_ERR_NOSUCHNAME;
+				if (vs->s_svr) {
+					/* We don't want to set weight
+					   of sorry server */
+					rs = NULL;
+					if (--irs == 0) break;
+				}
 				for (e2 = LIST_HEAD(vs->rs); e2; ELEMENT_NEXT(e2)) {
 					rs = ELEMENT_DATA(e2);
 					if (--irs == 0) break;
@@ -524,6 +530,8 @@ check_snmp_realserver_weight(int action,
 				break;
 			}
 		}
+		/* Did not find a RS or this is a sorry server (this
+		   should not happen) */
 		if (!rs) return SNMP_ERR_NOSUCHNAME;
 		if (action == RESERVE2)
 			break;
