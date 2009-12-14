@@ -1254,7 +1254,7 @@ VirtualServerEntry ::= SEQUENCE {
 	virtualServerQuorumUp DisplayString,
 	virtualServerQuorumDown DisplayString,
 	virtualServerHysteresis Unsigned32,
-	virtualServerStatsConns Counter32,
+	virtualServerStatsConns Gauge32,
 	virtualServerStatsInPkts Counter32,
 	virtualServerStatsOutPkts Counter32,
 	virtualServerStatsInBytes Counter64,
@@ -1501,7 +1501,7 @@ virtualServerHysteresis OBJECT-TYPE
     ::= { virtualServerEntry 26 }
 
 virtualServerStatsConns OBJECT-TYPE
-    SYNTAX Counter32
+    SYNTAX Gauge32
     UNITS "connections"
     MAX-ACCESS read-only
     STATUS current
@@ -1624,10 +1624,10 @@ RealServerEntry ::= SEQUENCE {
 	realServerNotifyUp DisplayString,
 	realServerNotifyDown DisplayString,
 	realServerFailedChecks Unsigned32,
-	realServerStatsConns Counter32,
-	realServerStatsActiveConns Counter32,
-	realServerStatsInactiveConns Counter32,
-	realServerStatsPersistentConns Counter32,
+	realServerStatsConns Gauge32,
+	realServerStatsActiveConns Gauge32,
+	realServerStatsInactiveConns Gauge32,
+	realServerStatsPersistentConns Gauge32,
 	realServerStatsInPkts Counter32,
 	realServerStatsOutPkts Counter32,
 	realServerStatsInBytes Counter64,
@@ -1747,7 +1747,7 @@ realServerFailedChecks OBJECT-TYPE
     ::= { realServerEntry 13 }
 
 realServerStatsConns OBJECT-TYPE
-    SYNTAX Counter32
+    SYNTAX Gauge32
     UNITS "connections"
     MAX-ACCESS read-only
     STATUS current
@@ -1756,7 +1756,7 @@ realServerStatsConns OBJECT-TYPE
     ::= { realServerEntry 14 }
 
 realServerStatsActiveConns OBJECT-TYPE
-    SYNTAX Counter32
+    SYNTAX Gauge32
     UNITS "connections"
     MAX-ACCESS read-only
     STATUS current
@@ -1765,7 +1765,7 @@ realServerStatsActiveConns OBJECT-TYPE
     ::= { realServerEntry 15 }
 
 realServerStatsInactiveConns OBJECT-TYPE
-    SYNTAX Counter32
+    SYNTAX Gauge32
     UNITS "connections"
     MAX-ACCESS read-only
     STATUS current
@@ -1774,7 +1774,7 @@ realServerStatsInactiveConns OBJECT-TYPE
     ::= { realServerEntry 16 }
 
 realServerStatsPersistentConns OBJECT-TYPE
-    SYNTAX Counter32
+    SYNTAX Gauge32
     UNITS "connections"
     MAX-ACCESS read-only
     STATUS current
