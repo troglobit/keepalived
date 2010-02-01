@@ -1520,7 +1520,7 @@ virtualServerStatsInPkts OBJECT-TYPE
 
 virtualServerStatsOutPkts OBJECT-TYPE
     SYNTAX Counter32
-    UNITS "connections/s"
+    UNITS "packets"
     MAX-ACCESS read-only
     STATUS current
     DESCRIPTION
