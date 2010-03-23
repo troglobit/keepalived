@@ -512,7 +512,8 @@ thread_fetch(thread_master * m, thread * fetch)
 	TIMEVAL timer_wait;
 	int signal_fd;
 #ifdef _WITH_SNMP_
-	int fakeblock = 0;
+	TIMEVAL snmp_timer_wait;
+	int snmpblock = 0;
 	int fdsetsize;
 #endif
 
@@ -561,10 +562,18 @@ retry:	/* When thread can't fetch try to find next thread again. */
 	signal_fd = signal_rfd();
 	FD_SET(signal_fd, &readfd);
 
-	/* NetSNMP snmp_select_info will add its own fd to readfd */
 #ifdef _WITH_SNMP_
+	/* When SNMP is enabled, we may have to select() on additional
+	   FD. snmp_select_info() will add them to `readfd'. The trick
+	   with this function is its last argument. We need to set it
+	   to 0 and we need to use the provided new timer only if it
+	   is still set to 0. */
 	fdsetsize = FD_SETSIZE;
-	snmp_select_info(&fdsetsize, &readfd, &timer_wait, &fakeblock);
+	snmpblock = 0;
+	memcpy(&snmp_timer_wait, &timer_wait, sizeof(TIMEVAL));
+	snmp_select_info(&fdsetsize, &readfd, &snmp_timer_wait, &snmpblock);
+	if (snmpblock == 0)
+		memcpy(&timer_wait, &snmp_timer_wait, sizeof(TIMEVAL));
 #endif
 	ret = select(FD_SETSIZE, &readfd, &writefd, &exceptfd, &timer_wait);
 
