@@ -686,6 +686,11 @@ retry:	/* When thread can't fetch try to find next thread again. */
 	/* Return one event. */
 	thread_obj = thread_trim_head(&m->ready);
 
+#ifdef _WITH_SNMP_
+	run_alarms();
+	netsnmp_check_outstanding_agent_requests();
+#endif
+
 	/* There is no ready thread. */
 	if (!thread_obj)
 		goto retry;
@@ -693,11 +698,6 @@ retry:	/* When thread can't fetch try to find next thread again. */
 	*fetch = *thread_obj;
 	thread_obj->type = THREAD_UNUSED;
 	thread_add_unuse(m, thread_obj);
-
-#ifdef _WITH_SNMP_
-	run_alarms();
-	netsnmp_check_outstanding_agent_requests();
-#endif
 
 	return fetch;
 }
