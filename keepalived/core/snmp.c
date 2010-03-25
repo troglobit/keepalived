@@ -188,6 +188,10 @@ snmp_agent_init(oid *myoid, int len, char *name, struct variable *variables,
 	    NETSNMP_DS_LIB_DONT_PERSIST_STATE, TRUE);
 	/* Do not load any MIB */
 	setenv("MIBS", "", 1);
+	/* Ping AgentX less often than every 15 seconds: pinging can
+	   block keepalived. We check every 2 minutes. */
+	netsnmp_ds_set_int(NETSNMP_DS_APPLICATION_ID,
+			   NETSNMP_DS_AGENT_AGENTX_PING_INTERVAL, 120);
 
 	init_agent(name);
 	if (register_mib(name, (struct variable *) variables, varsize,
