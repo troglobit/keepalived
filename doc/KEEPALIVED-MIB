@@ -1044,6 +1044,583 @@ vrrpScriptFall OBJECT-TYPE
     ::= { vrrpScriptEntry 8 }
 
 -- ----------------------------------------------------------------------
+-- Healthchecker part
+-- ----------------------------------------------------------------------
+
+-- Virtual server group
+
+virtualServerGroupTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF VirtualServerGroupEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+	"Table of virtual server groups."
+    ::= { check 1 }
+
+virtualServerGroupEntry OBJECT-TYPE
+    SYNTAX VirtualServerGroupEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+	"Information describing a virtual server group."
+    INDEX { virtualServerGroupIndex }
+    ::= { virtualServerGroupTable 1 }
+
+VirtualServerGroupEntry ::= SEQUENCE {
+	virtualServerGroupIndex Integer32,
+	virtualServerGroupName DisplayString
+}
+
+virtualServerGroupIndex OBJECT-TYPE
+    SYNTAX Integer32 (1..2147483647)
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+	"Index of the virtual server group."
+    ::= { virtualServerGroupEntry 1 }
+
+virtualServerGroupName OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Name of the virtual server group."
+    ::= { virtualServerGroupEntry 2 }
+
+virtualServerGroupMemberTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF VirtualServerGroupMemberEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+	"Table of members of a virtual server group."
+    ::= { check 2 }
+
+virtualServerGroupMemberEntry OBJECT-TYPE
+    SYNTAX VirtualServerGroupMemberEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+	"Description of a member of a virtual server group."
+    INDEX { virtualServerGroupIndex, virtualServerGroupMemberIndex }
+    ::= { virtualServerGroupMemberTable 1 }
+
+VirtualServerGroupMemberEntry ::= SEQUENCE {
+	virtualServerGroupMemberIndex Integer32,
+	virtualServerGroupMemberType INTEGER,
+	virtualServerGroupMemberFwMark Unsigned32,
+	virtualServerGroupMemberAddrType InetAddressType,
+	virtualServerGroupMemberAddress InetAddress,
+	virtualServerGroupMemberAddr1 InetAddress,
+	virtualServerGroupMemberAddr2 InetAddress,
+	virtualServerGroupMemberPort InetPortNumber
+}
+
+virtualServerGroupMemberIndex OBJECT-TYPE
+    SYNTAX Integer32 (1..2147483647)
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+	"Index of the member into virtual server group."
+    ::= { virtualServerGroupMemberEntry 1 }
+
+virtualServerGroupMemberType OBJECT-TYPE
+    SYNTAX INTEGER { fwmark(1), ip(2), iprange(3) }
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Kind of entry: firewall mark, address with port or range of
+	 addresses with port."
+    ::= { virtualServerGroupMemberEntry 2 }
+
+virtualServerGroupMemberFwMark OBJECT-TYPE
+    SYNTAX Unsigned32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Firewall mark for this member.
+
+	 If the kind of this member is not fwmark(1), then this entry
+	 should not exist for the current row."
+    ::= { virtualServerGroupMemberEntry 3 }
+
+virtualServerGroupMemberAddrType OBJECT-TYPE
+    SYNTAX InetAddressType
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Type of IP address for this member.
+
+	 If the kind of this member is neither address(2) or range(3),
+	 then this entry should not exist for the current row."
+    ::= { virtualServerGroupMemberEntry 4 }
+
+virtualServerGroupMemberAddress OBJECT-TYPE
+    SYNTAX InetAddress
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"IP address of this member.
+
+	If the kind of this member is not address(2), then this entry
+	should not exist for the current row."
+    ::= { virtualServerGroupMemberEntry 5 }
+
+virtualServerGroupMemberAddr1 OBJECT-TYPE
+    SYNTAX InetAddress
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"First IP address of the range for this member.
+
+	If the kind of this member is not range(3), then this entry
+	should not exist for the current row."
+    ::= { virtualServerGroupMemberEntry 6 }
+
+virtualServerGroupMemberAddr2 OBJECT-TYPE
+    SYNTAX InetAddress
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Second IP address of the range for this member.
+
+	If the kind of this member is not range(3), then this entry
+	should not exist for the current row."
+    ::= { virtualServerGroupMemberEntry 7 }
+
+virtualServerGroupMemberPort OBJECT-TYPE
+    SYNTAX InetPortNumber
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"V port for this member.
+
+	If the kind of this member is neither address(2) nor range(3),
+	then this entry should not exist for the current row."
+    ::= { virtualServerGroupMemberEntry 8 }
+
+-- virtual server
+
+virtualServerTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF VirtualServerEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+	"Table of virtual servers."
+    ::= { check 3 }
+
+virtualServerEntry OBJECT-TYPE
+    SYNTAX VirtualServerEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+	"Information describing a virtual server."
+    INDEX { virtualServerIndex }
+    ::= { virtualServerTable 1 }
+
+VirtualServerEntry ::= SEQUENCE {
+	virtualServerIndex Integer32,
+	virtualServerType INTEGER,
+	virtualServerNameOfGroup DisplayString,
+	virtualServerFwMark Unsigned32,
+	virtualServerAddrType InetAddressType,
+	virtualServerAddress InetAddress,
+	virtualServerPort InetPortNumber,
+	virtualServerProtocol INTEGER,
+	virtualServerLoadBalancingAlgo INTEGER,
+	virtualServerLoadBalancingKind INTEGER,
+	virtualServerStatus INTEGER,
+	virtualServerVirtualHost DisplayString,
+	virtualServerPersist INTEGER,
+	virtualServerPersistTimeout Unsigned32,
+	virtualServerPersistGranularity InetAddress,
+	virtualServerDelayLoop Unsigned32,
+	virtualServerHaSuspend TruthValue,
+	virtualServerAlpha INTEGER,
+	virtualServerOmega INTEGER,
+	virtualServerRealServersTotal Unsigned32,
+	virtualServerRealServersUp Unsigned32,
+	virtualServerQuorum Unsigned32,
+	virtualServerQuorumStatus INTEGER,
+	virtualServerQuorumUp DisplayString,
+	virtualServerQuorumDown DisplayString,
+	virtualServerHysteresis Unsigned32
+}
+
+virtualServerIndex OBJECT-TYPE
+    SYNTAX Integer32 (1..2147483647)
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+	"Index of the virtual server."
+    ::= { virtualServerEntry 1 }
+
+virtualServerType OBJECT-TYPE
+    SYNTAX INTEGER { fwmark(1), ip(2), group(3) }
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Type of virtual server. A virtual server can either be
+	defined from a firewall mark, an IP and a port
+	or from a virtual server group."
+    ::= { virtualServerEntry 2 }
+
+virtualServerNameOfGroup OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"If the virtual is defined from a group, this is the name of the group."
+    ::= { virtualServerEntry 3 }
+
+virtualServerFwMark OBJECT-TYPE
+    SYNTAX Unsigned32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"If the virtual server is defined from a firewall mark, this
+	is the value of the mark. Otherwise, this column should not
+	exist in the current row."
+    ::= { virtualServerEntry 4 }
+
+virtualServerAddrType OBJECT-TYPE
+    SYNTAX InetAddressType
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"If the virtual server is defined from an IP, this
+	is the address family. Otherwise, this column should not
+	exist in the current row."
+    ::= { virtualServerEntry 5 }
+
+virtualServerAddress OBJECT-TYPE
+    SYNTAX InetAddress
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"If the virtual server is defined from an IP address, this
+	is the value of the IP. Otherwise, this column should not
+	exist in the current row."
+    ::= { virtualServerEntry 6 }
+
+virtualServerPort OBJECT-TYPE
+    SYNTAX InetPortNumber
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"If the virtual server is defined from an IP, this is
+	the value of the port to listen for requests. Otherwise, this column
+	should not exist in the current row."
+    ::= { virtualServerEntry 7 }
+
+virtualServerProtocol OBJECT-TYPE
+    SYNTAX INTEGER { tcp(1), udp(2) }
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Which transport protocol should be used for this virtual server."
+    ::= { virtualServerEntry 8 }
+
+virtualServerLoadBalancingAlgo OBJECT-TYPE
+    SYNTAX INTEGER {
+    	rr(1),
+	wrr(2),
+	lc(3),
+	wlc(4),
+	lblc(5),
+	lblcr(6),
+	dh(7),
+	sh(8),
+	sed(9),
+	nq(10),
+	unknown(99)
+    }
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Which load balancing algorithm (or scheduler) should be used
+	for this virtual server."
+    ::= { virtualServerEntry 9 }
+
+virtualServerLoadBalancingKind OBJECT-TYPE
+    SYNTAX INTEGER { nat(1), dr(2), tun(3) }
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Forwarding method to use for this virtual server."
+    ::= { virtualServerEntry 10 }
+
+virtualServerStatus OBJECT-TYPE
+    SYNTAX INTEGER { alive(1), dead(2) }
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Current status of this virtual server."
+    ::= { virtualServerEntry 11 }
+
+virtualServerVirtualHost OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Virtualhost of this server for HTTP like requests."
+    ::= { virtualServerEntry 12 }
+
+virtualServerPersist OBJECT-TYPE
+    SYNTAX INTEGER { enabled(1), disabled(2) }
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Is the virtual service persistence enabled?"
+    ::= { virtualServerEntry 13 }
+
+virtualServerPersistTimeout OBJECT-TYPE
+    SYNTAX Unsigned32
+    UNITS "seconds"
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"If this virtual service is persistence, what is the timeout."
+    ::= { virtualServerEntry 14 }
+
+virtualServerPersistGranularity OBJECT-TYPE
+    SYNTAX InetAddress
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Netmask specifying the granularity of the persistence mechanism."
+    ::= { virtualServerEntry 15 }
+
+virtualServerDelayLoop OBJECT-TYPE
+    SYNTAX Unsigned32
+    UNITS "seconds"
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Delay in seconds between two checks."
+    ::= { virtualServerEntry 16 }
+
+virtualServerHaSuspend OBJECT-TYPE
+    SYNTAX TruthValue
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"If set to true(1), checks will be suspended if the IP of the
+	virtual server is currently not set."
+    ::= { virtualServerEntry 17 }
+
+virtualServerAlpha OBJECT-TYPE
+    SYNTAX INTEGER { enabled(1), disabled(2) }
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Is alpha mode enabled?"
+    ::= { virtualServerEntry 18 }
+
+virtualServerOmega OBJECT-TYPE
+    SYNTAX INTEGER { enabled(1), disabled(2) }
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Is omega mode enabled?"
+    ::= { virtualServerEntry 19 }
+
+virtualServerRealServersTotal OBJECT-TYPE
+    SYNTAX Unsigned32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Total number of real servers for this virtual server."
+    ::= { virtualServerEntry 20 }
+
+virtualServerRealServersUp OBJECT-TYPE
+    SYNTAX Unsigned32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Real servers actually up for this virtual server."
+    ::= { virtualServerEntry 21 }
+
+virtualServerQuorum OBJECT-TYPE
+    SYNTAX Unsigned32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Quorum to get amond real servers to consider this virtual server up."
+    ::= { virtualServerEntry 22 }
+
+virtualServerQuorumStatus OBJECT-TYPE
+    SYNTAX INTEGER { met(1), notMet(2) }
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Current status of the quorum for this virtual server."
+    ::= { virtualServerEntry 23 }
+
+virtualServerQuorumUp OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Command to execute when the quorum is met."
+    ::= { virtualServerEntry 24 }
+
+virtualServerQuorumDown OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Command to execute when the quorum is not met."
+    ::= { virtualServerEntry 25 }
+
+virtualServerHysteresis OBJECT-TYPE
+    SYNTAX Unsigned32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Hysteresis with respect to quorum count."
+    ::= { virtualServerEntry 26 }
+
+-- real servers
+
+realServerTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF RealServerEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+	"Table of real servers. This includes regular real servers and sorry servers."
+    ::= { check 4 }
+
+realServerEntry OBJECT-TYPE
+    SYNTAX RealServerEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+	"Information describing a real server."
+    INDEX { virtualServerIndex, realServerIndex }
+    ::= { realServerTable 1 }
+
+RealServerEntry ::= SEQUENCE {
+	realServerIndex Integer32,
+	realServerType INTEGER,
+	realServerAddrType InetAddressType,
+	realServerAddress InetAddress,
+	realServerPort InetPortNumber,
+	realServerStatus INTEGER,
+	realServerWeight Integer32,
+	realServerUpperConnectionLimit Unsigned32,
+	realServerLowerConnectionLimit Unsigned32,
+	realServerActionWhenDown INTEGER,
+	realServerNotifyUp DisplayString,
+	realServerNotifyDown DisplayString,
+	realServerFailedChecks Unsigned32
+}
+
+realServerIndex OBJECT-TYPE
+    SYNTAX Integer32 (1..2147483647)
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+	"Index of the real server."
+    ::= { realServerEntry 1 }
+
+realServerType OBJECT-TYPE
+    SYNTAX INTEGER { regular(1), sorry(2) }
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Type of real server: either a regular real server or a sorry server."
+    ::= { realServerEntry 2 }
+
+realServerAddrType OBJECT-TYPE
+    SYNTAX InetAddressType
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Address family for this real server."
+    ::= { realServerEntry 3 }
+
+realServerAddress OBJECT-TYPE
+    SYNTAX InetAddress
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"IP address of this real server."
+    ::= { realServerEntry 4 }
+
+realServerPort OBJECT-TYPE
+    SYNTAX InetPortNumber
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Port of the service."
+    ::= { realServerEntry 5 }
+
+realServerStatus OBJECT-TYPE
+    SYNTAX INTEGER { alive(1), dead(2) }
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Status of this real server."
+    ::= { realServerEntry 6 }
+
+realServerWeight OBJECT-TYPE
+    SYNTAX Integer32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Weight of this real server."
+    ::= { realServerEntry 7 }
+
+realServerUpperConnectionLimit OBJECT-TYPE
+    SYNTAX Unsigned32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Maximum number of connections for this real server."
+    ::= { realServerEntry 8 }
+
+realServerLowerConnectionLimit OBJECT-TYPE
+    SYNTAX Unsigned32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Minimum number of connections for this real server."
+    ::= { realServerEntry 9 }
+
+realServerActionWhenDown OBJECT-TYPE
+    SYNTAX INTEGER { remove(1), inhibit(2) }
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"What action is performed when this server is down. Its weight
+	can be set to 0 (inhibit) or it can be removed from the pool."
+    ::= { realServerEntry 10 }
+
+realServerNotifyUp OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Command to execute when this server becomes alive."
+    ::= { realServerEntry 11 }
+
+realServerNotifyDown OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Command to execute when this server becomes dead."
+    ::= { realServerEntry 12 }
+
+realServerFailedChecks OBJECT-TYPE
+    SYNTAX Unsigned32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"How many failed checks for this real server."
+    ::= { realServerEntry 13 }
+
+-- ----------------------------------------------------------------------
 -- Conformance
 -- ----------------------------------------------------------------------
 
@@ -1071,6 +1648,18 @@ vrrpCompliances MODULE-COMPLIANCE
 	vrrpInstanceGroup
     }
     ::= { compliances 2 }
+
+checkCompliances MODULE-COMPLIANCE
+    STATUS current
+    DESCRIPTION
+	"The check compliance statement"
+    MODULE -- this module
+    MANDATORY-GROUPS {
+	virtualServerGroupGroup,
+	virtualServerGroup,
+	realServerGroup
+    }
+    ::= { compliances 3 }
 
 globalGroup OBJECT-GROUP
     OBJECTS {
@@ -1179,5 +1768,74 @@ vrrpScriptGroup OBJECT-GROUP
     DESCRIPTION
 	"Conformance group for VRRP scripts."
     ::= { groups 4 }
+
+virtualServerGroupGroup OBJECT-GROUP
+    OBJECTS {
+	virtualServerGroupName,
+	virtualServerGroupMemberType,
+	virtualServerGroupMemberFwMark,
+	virtualServerGroupMemberAddrType,
+	virtualServerGroupMemberAddress,
+	virtualServerGroupMemberAddr1,
+	virtualServerGroupMemberAddr2,
+	virtualServerGroupMemberPort
+	}
+    STATUS current
+    DESCRIPTION
+	"Conformance group for virtual server groups."
+    ::= { groups 5 }
+
+virtualServerGroup OBJECT-GROUP
+    OBJECTS {
+	virtualServerType,
+	virtualServerNameOfGroup,
+	virtualServerFwMark,
+	virtualServerAddrType,
+	virtualServerAddress,
+	virtualServerPort,
+	virtualServerProtocol,
+	virtualServerLoadBalancingAlgo,
+	virtualServerLoadBalancingKind,
+	virtualServerStatus,
+	virtualServerVirtualHost,
+	virtualServerPersist,
+	virtualServerPersistTimeout,
+	virtualServerPersistGranularity,
+	virtualServerDelayLoop,
+	virtualServerHaSuspend,
+	virtualServerAlpha,
+	virtualServerOmega,
+	virtualServerRealServersTotal,
+	virtualServerRealServersUp,
+	virtualServerQuorum,
+	virtualServerQuorumStatus,
+	virtualServerQuorumUp,
+	virtualServerQuorumDown,
+	virtualServerHysteresis
+	}
+    STATUS current
+    DESCRIPTION
+	"Conformance group for virtual servers."
+    ::= { groups 6 }
+
+realServerGroup OBJECT-GROUP
+    OBJECTS {
+	realServerType,
+	realServerAddrType,
+	realServerAddress,
+	realServerPort,
+	realServerStatus,
+	realServerWeight,
+	realServerUpperConnectionLimit,
+	realServerLowerConnectionLimit,
+	realServerActionWhenDown,
+	realServerNotifyUp,
+	realServerNotifyDown,
+	realServerFailedChecks
+	}
+    STATUS current
+    DESCRIPTION
+	"Conformance group for real servers."
+    ::= { groups 7 }
 
 END
