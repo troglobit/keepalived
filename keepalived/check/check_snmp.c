@@ -25,6 +25,7 @@
 #include "check_snmp.h"
 #include "check_data.h"
 #include "list.h"
+#include "ipvswrapper.h"
 
 /* Magic */
 #define CHECK_SNMP_VSGROUPNAME 1
@@ -60,6 +61,16 @@
 #define CHECK_SNMP_VSHYSTERESIS 33
 #define CHECK_SNMP_VSREALTOTAL 34
 #define CHECK_SNMP_VSREALUP 35
+#define CHECK_SNMP_VSSTATSCONNS 61
+#define CHECK_SNMP_VSSTATSINPKTS 62
+#define CHECK_SNMP_VSSTATSOUTPKTS 63
+#define CHECK_SNMP_VSSTATSINBYTES 64
+#define CHECK_SNMP_VSSTATSOUTBYTES 65
+#define CHECK_SNMP_VSRATECPS 66
+#define CHECK_SNMP_VSRATEINPPS 67
+#define CHECK_SNMP_VSRATEOUTPPS 68
+#define CHECK_SNMP_VSRATEINBPS 69
+#define CHECK_SNMP_VSRATEOUTBPS 70
 #define CHECK_SNMP_RSTYPE 36
 #define CHECK_SNMP_RSADDRTYPE 37
 #define CHECK_SNMP_RSADDRESS 38
@@ -72,6 +83,19 @@
 #define CHECK_SNMP_RSNOTIFYUP 45
 #define CHECK_SNMP_RSNOTIFYDOWN 46
 #define CHECK_SNMP_RSFAILEDCHECKS 47
+#define CHECK_SNMP_RSSTATSCONNS 48
+#define CHECK_SNMP_RSSTATSACTIVECONNS 49
+#define CHECK_SNMP_RSSTATSINACTIVECONNS 50
+#define CHECK_SNMP_RSSTATSPERSISTENTCONNS 51
+#define CHECK_SNMP_RSSTATSINPKTS 52
+#define CHECK_SNMP_RSSTATSOUTPKTS 53
+#define CHECK_SNMP_RSSTATSINBYTES 54
+#define CHECK_SNMP_RSSTATSOUTBYTES 55
+#define CHECK_SNMP_RSRATECPS 56
+#define CHECK_SNMP_RSRATEINPPS 57
+#define CHECK_SNMP_RSRATEOUTPPS 58
+#define CHECK_SNMP_RSRATEINBPS 59
+#define CHECK_SNMP_RSRATEOUTBPS 60
 
 #define RETURN_IP46ADDRESS(entity)  do {				\
 		if (entity->addr.ss_family == AF_INET6) {		\
@@ -271,6 +295,9 @@ check_snmp_virtualserver(struct variable *vp, oid *name, size_t *length,
 			 int exact, size_t *var_len, WriteMethod **write_method)
 {
 	static unsigned long long_ret;
+#ifdef _KRNL_2_6_
+	static U64 counter64_ret;
+#endif
 	virtual_server *v;
 	element e;
 
@@ -428,6 +455,52 @@ check_snmp_virtualserver(struct variable *vp, oid *name, size_t *length,
 				if (((real_server *)ELEMENT_DATA(e))->alive)
 					long_ret++;
 		return (u_char*)&long_ret;
+#ifdef _KRNL_2_6_
+	case CHECK_SNMP_VSSTATSCONNS:
+		ipvs_update_stats(v);
+		long_ret = v->stats.conns;
+		return (u_char*)&long_ret;
+	case CHECK_SNMP_VSSTATSINPKTS:
+		ipvs_update_stats(v);
+		long_ret = v->stats.inpkts;
+		return (u_char*)&long_ret;
+	case CHECK_SNMP_VSSTATSOUTPKTS:
+		ipvs_update_stats(v);
+		long_ret = v->stats.outpkts;
+		return (u_char*)&long_ret;
+	case CHECK_SNMP_VSSTATSINBYTES:
+		ipvs_update_stats(v);
+		counter64_ret.low = v->stats.inbytes & 0xffffffff;
+		counter64_ret.high = v->stats.inbytes >> 32;
+		*var_len = sizeof(U64);
+		return (u_char*)&counter64_ret;
+	case CHECK_SNMP_VSSTATSOUTBYTES:
+		ipvs_update_stats(v);
+		counter64_ret.low = v->stats.outbytes & 0xffffffff;
+		counter64_ret.high = v->stats.outbytes >> 32;
+		*var_len = sizeof(U64);
+		return (u_char*)&counter64_ret;
+	case CHECK_SNMP_VSRATECPS:
+		ipvs_update_stats(v);
+		long_ret = v->stats.cps;
+		return (u_char*)&long_ret;
+	case CHECK_SNMP_VSRATEINPPS:
+		ipvs_update_stats(v);
+		long_ret = v->stats.inpps;
+		return (u_char*)&long_ret;
+	case CHECK_SNMP_VSRATEOUTPPS:
+		ipvs_update_stats(v);
+		long_ret = v->stats.outpps;
+		return (u_char*)&long_ret;
+	case CHECK_SNMP_VSRATEINBPS:
+		ipvs_update_stats(v);
+		long_ret = v->stats.inbps;
+		return (u_char*)&long_ret;
+	case CHECK_SNMP_VSRATEOUTBPS:
+		ipvs_update_stats(v);
+		long_ret = v->stats.outbps;
+		return (u_char*)&long_ret;
+#endif
 	default:
 		return NULL;
         }
@@ -442,12 +515,15 @@ check_snmp_realserver(struct variable *vp, oid *name, size_t *length,
 		      int exact, size_t *var_len, WriteMethod **write_method)
 {
 	static unsigned long long_ret;
+#ifdef _KRNL_2_6_
+	static U64 counter64_ret;
+#endif
         oid *target, current[2], best[2];
         int result, target_len;
 	int curvirtual = 0, curreal;
 	real_server *e = NULL, *be = NULL;
 	element e1, e2 = NULL;
-	virtual_server *vs;
+	virtual_server *vs, *bvs = NULL;
 #define STATE_RS_SORRY 1
 #define STATE_RS_REGULAR_FIRST 2
 #define STATE_RS_REGULAR_NEXT 3
@@ -526,6 +602,7 @@ check_snmp_realserver(struct variable *vp, oid *name, size_t *length,
 			if (result == 0) {
 				/* Got an exact match and asked for it */
 				be = e;
+				bvs = vs;
 				btype = type;
 				goto real_found;
 			}
@@ -533,6 +610,7 @@ check_snmp_realserver(struct variable *vp, oid *name, size_t *length,
 				/* This is our best match */
 				memcpy(best, current, sizeof(oid) * 2);
 				be = e;
+				bvs = vs;
 				btype = type;
 				goto real_be_found;
 			}
@@ -603,6 +681,64 @@ check_snmp_realserver(struct variable *vp, oid *name, size_t *length,
 		else
 			long_ret = LIST_SIZE(be->failed_checkers);
 		return (u_char*)&long_ret;
+#ifdef _KRNL_2_6_
+	case CHECK_SNMP_RSSTATSCONNS:
+		ipvs_update_stats(bvs);
+		long_ret = be->stats.conns;
+		return (u_char*)&long_ret;
+	case CHECK_SNMP_RSSTATSACTIVECONNS:
+		ipvs_update_stats(bvs);
+		long_ret = be->activeconns;
+		return (u_char*)&long_ret;
+	case CHECK_SNMP_RSSTATSINACTIVECONNS:
+		ipvs_update_stats(bvs);
+		long_ret = be->inactconns;
+		return (u_char*)&long_ret;
+	case CHECK_SNMP_RSSTATSPERSISTENTCONNS:
+		ipvs_update_stats(bvs);
+		long_ret = be->persistconns;
+		return (u_char*)&long_ret;
+	case CHECK_SNMP_RSSTATSINPKTS:
+		ipvs_update_stats(bvs);
+		long_ret = be->stats.inpkts;
+		return (u_char*)&long_ret;
+	case CHECK_SNMP_RSSTATSOUTPKTS:
+		ipvs_update_stats(bvs);
+		long_ret = be->stats.outpkts;
+		return (u_char*)&long_ret;
+	case CHECK_SNMP_RSSTATSINBYTES:
+		ipvs_update_stats(bvs);
+		counter64_ret.low = be->stats.inbytes & 0xffffffff;
+		counter64_ret.high = be->stats.inbytes >> 32;
+		*var_len = sizeof(U64);
+		return (u_char*)&counter64_ret;
+	case CHECK_SNMP_RSSTATSOUTBYTES:
+		ipvs_update_stats(bvs);
+		counter64_ret.low = be->stats.outbytes & 0xffffffff;
+		counter64_ret.high = be->stats.outbytes >> 32;
+		*var_len = sizeof(U64);
+		return (u_char*)&counter64_ret;
+	case CHECK_SNMP_RSRATECPS:
+		ipvs_update_stats(bvs);
+		long_ret = be->stats.cps;
+		return (u_char*)&long_ret;
+	case CHECK_SNMP_RSRATEINPPS:
+		ipvs_update_stats(bvs);
+		long_ret = be->stats.inpps;
+		return (u_char*)&long_ret;
+	case CHECK_SNMP_RSRATEOUTPPS:
+		ipvs_update_stats(bvs);
+		long_ret = be->stats.outpps;
+		return (u_char*)&long_ret;
+	case CHECK_SNMP_RSRATEINBPS:
+		ipvs_update_stats(bvs);
+		long_ret = be->stats.inbps;
+		return (u_char*)&long_ret;
+	case CHECK_SNMP_RSRATEOUTBPS:
+		ipvs_update_stats(bvs);
+		long_ret = be->stats.outbps;
+		return (u_char*)&long_ret;
+#endif
 	default:
 		return NULL;
 	}
@@ -685,6 +821,26 @@ static struct variable8 check_vars[] = {
 	 check_snmp_virtualserver, 3, {3, 1, 25}},
 	{CHECK_SNMP_VSHYSTERESIS, ASN_UNSIGNED, RONLY,
 	 check_snmp_virtualserver, 3, {3, 1, 26}},
+	{CHECK_SNMP_VSSTATSCONNS, ASN_GAUGE, RONLY,
+	 check_snmp_virtualserver, 3, {3, 1, 27}},
+	{CHECK_SNMP_VSSTATSINPKTS, ASN_COUNTER, RONLY,
+	 check_snmp_virtualserver, 3, {3, 1, 28}},
+	{CHECK_SNMP_VSSTATSOUTPKTS, ASN_COUNTER, RONLY,
+	 check_snmp_virtualserver, 3, {3, 1, 29}},
+	{CHECK_SNMP_VSSTATSINBYTES, ASN_COUNTER64, RONLY,
+	 check_snmp_virtualserver, 3, {3, 1, 30}},
+	{CHECK_SNMP_VSSTATSOUTBYTES, ASN_COUNTER64, RONLY,
+	 check_snmp_virtualserver, 3, {3, 1, 31}},
+	{CHECK_SNMP_VSRATECPS, ASN_GAUGE, RONLY,
+	 check_snmp_virtualserver, 3, {3, 1, 32}},
+	{CHECK_SNMP_VSRATEINPPS, ASN_GAUGE, RONLY,
+	 check_snmp_virtualserver, 3, {3, 1, 33}},
+	{CHECK_SNMP_VSRATEOUTPPS, ASN_GAUGE, RONLY,
+	 check_snmp_virtualserver, 3, {3, 1, 34}},
+	{CHECK_SNMP_VSRATEINBPS, ASN_GAUGE, RONLY,
+	 check_snmp_virtualserver, 3, {3, 1, 35}},
+	{CHECK_SNMP_VSRATEOUTBPS, ASN_GAUGE, RONLY,
+	 check_snmp_virtualserver, 3, {3, 1, 36}},
 	/* realServerTable */
 	{CHECK_SNMP_RSTYPE, ASN_INTEGER, RONLY,
 	 check_snmp_realserver, 3, {4, 1, 2}},
@@ -712,6 +868,34 @@ static struct variable8 check_vars[] = {
 	 check_snmp_realserver, 3, {4, 1, 12}},
 	{CHECK_SNMP_RSFAILEDCHECKS, ASN_UNSIGNED, RONLY,
 	 check_snmp_realserver, 3, {4, 1, 13}},
+#ifdef _KRNL_2_6_
+	{CHECK_SNMP_RSSTATSCONNS, ASN_GAUGE, RONLY,
+	 check_snmp_realserver, 3, {4, 1, 14}},
+	{CHECK_SNMP_RSSTATSACTIVECONNS, ASN_GAUGE, RONLY,
+	 check_snmp_realserver, 3, {4, 1, 15}},
+	{CHECK_SNMP_RSSTATSINACTIVECONNS, ASN_GAUGE, RONLY,
+	 check_snmp_realserver, 3, {4, 1, 16}},
+	{CHECK_SNMP_RSSTATSPERSISTENTCONNS, ASN_GAUGE, RONLY,
+	 check_snmp_realserver, 3, {4, 1, 17}},
+	{CHECK_SNMP_RSSTATSINPKTS, ASN_COUNTER, RONLY,
+	 check_snmp_realserver, 3, {4, 1, 18}},
+	{CHECK_SNMP_RSSTATSOUTPKTS, ASN_COUNTER, RONLY,
+	 check_snmp_realserver, 3, {4, 1, 19}},
+	{CHECK_SNMP_RSSTATSINBYTES, ASN_COUNTER64, RONLY,
+	 check_snmp_realserver, 3, {4, 1, 20}},
+	{CHECK_SNMP_RSSTATSOUTBYTES, ASN_COUNTER64, RONLY,
+	 check_snmp_realserver, 3, {4, 1, 21}},
+	{CHECK_SNMP_RSRATECPS, ASN_GAUGE, RONLY,
+	 check_snmp_realserver, 3, {4, 1, 22}},
+	{CHECK_SNMP_RSRATEINPPS, ASN_GAUGE, RONLY,
+	 check_snmp_realserver, 3, {4, 1, 23}},
+	{CHECK_SNMP_RSRATEOUTPPS, ASN_GAUGE, RONLY,
+	 check_snmp_realserver, 3, {4, 1, 24}},
+	{CHECK_SNMP_RSRATEINBPS, ASN_GAUGE, RONLY,
+	 check_snmp_realserver, 3, {4, 1, 25}},
+	{CHECK_SNMP_RSRATEOUTBPS, ASN_GAUGE, RONLY,
+	 check_snmp_realserver, 3, {4, 1, 26}},
+#endif
 };
 
 void

@@ -84,6 +84,14 @@ typedef struct _real_server {
 	int alive;
 	list failed_checkers;	/* List of failed checkers */
 	int set;		/* in the IPVS table */
+
+#if defined(_WITH_SNMP_) && defined(_KRNL_2_6_)
+	/* Statistics */
+	u_int32_t activeconns;	/* active connections */
+	u_int32_t inactconns;	/* inactive connections */
+	u_int32_t persistconns;	/* persistent connections */
+	struct ip_vs_stats_user stats;
+#endif
 } real_server;
 
 /* Virtual Server group definition */
@@ -126,6 +134,12 @@ typedef struct _virtual_server {
 
 	long unsigned hysteresis;	/* up/down events "lag" WRT quorum. */
 	unsigned quorum_state;		/* Reflects result of the last transition done. */
+
+#if defined(_WITH_SNMP_) && defined(_KRNL_2_6_)
+	/* Statistics */
+	time_t lastupdated;
+	struct ip_vs_stats_user stats;
+#endif
 } virtual_server;
 
 /* Configuration data root */
