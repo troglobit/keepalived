@@ -27,7 +27,7 @@
 #include "utils.h"
 
 /* system includes */
-#include <linux/if_packet.h>
+#include <netpacket/packet.h>
 
 /* global vars */
 char *garp_buffer;
