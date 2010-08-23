@@ -31,6 +31,8 @@
 #include "config.h"
 #include "vector.h"
 #include "list.h"
+#include "logger.h"
+#include "global_data.h"
 
 /* Magic */
 #define VRRP_SNMP_SCRIPT_NAME 3
@@ -865,7 +867,7 @@ vrrp_snmp_trackedscript(struct variable *vp, oid *name, size_t *length,
 	return NULL;
 }
 
-static oid vrrp_oid[] = VRRP_OID;
+static oid vrrp_oid[] = {VRRP_OID};
 static struct variable8 vrrp_vars[] = {
 	/* vrrpSyncGroupTable */
 	{VRRP_SNMP_SYNCGROUP_NAME, ASN_OCTET_STR, RONLY,
@@ -1019,4 +1021,112 @@ void
 vrrp_snmp_agent_close()
 {
 	snmp_agent_close(vrrp_oid, OID_LENGTH(vrrp_oid), "VRRP");
+}
+
+void
+vrrp_snmp_instance_trap(vrrp_rt *vrrp)
+{
+	/* OID of the notification */
+	oid notification_oid[] = { VRRP_OID, 9, 0, 2 };
+	size_t notification_oid_len = OID_LENGTH(notification_oid);
+	/* OID for snmpTrapOID.0 */
+	oid objid_snmptrap[] = { SNMPTRAP_OID };
+	size_t objid_snmptrap_len = OID_LENGTH(objid_snmptrap);
+
+	/* Other OID */
+	oid name_oid[] = { VRRP_OID, 3, 1, 2 };
+	size_t name_oid_len = OID_LENGTH(name_oid);
+	oid state_oid[] = { VRRP_OID, 3, 1, 4 };
+	size_t state_oid_len = OID_LENGTH(state_oid);
+	oid initialstate_oid[] = { VRRP_OID, 3, 1, 5};
+	size_t initialstate_oid_len = OID_LENGTH(initialstate_oid);
+
+	netsnmp_variable_list *notification_vars = NULL;
+
+        static unsigned long state;
+	static unsigned long istate;
+
+	if (!data->enable_traps) return;
+
+	/* snmpTrapOID */
+	snmp_varlist_add_variable(&notification_vars,
+				  objid_snmptrap, objid_snmptrap_len,
+				  ASN_OBJECT_ID,
+				  (u_char *) notification_oid,
+				  notification_oid_len * sizeof(oid));
+	/* vrrpInstanceName */
+	snmp_varlist_add_variable(&notification_vars,
+				  name_oid, name_oid_len,
+				  ASN_OCTET_STR,
+				  (u_char *)vrrp->iname,
+                                  strlen(vrrp->iname));
+	/* vrrpInstanceState */
+	state = vrrp_snmp_state(vrrp->state);
+	snmp_varlist_add_variable(&notification_vars,
+				  state_oid, state_oid_len,
+				  ASN_INTEGER,
+				  (u_char *)&state,
+				  sizeof(state));
+	/* vrrpInstanceInitialState */
+	istate = vrrp_snmp_state(vrrp->init_state);
+	snmp_varlist_add_variable(&notification_vars,
+				  initialstate_oid, initialstate_oid_len,
+				  ASN_INTEGER,
+				  (u_char *)&istate,
+				  sizeof(istate));
+
+	log_message(LOG_INFO,
+		    "VRRP_Instance(%s): Sending SNMP notification",
+		    vrrp->iname);
+	send_v2trap(notification_vars);
+	snmp_free_varbind(notification_vars);
+}
+
+void
+vrrp_snmp_group_trap(vrrp_sgroup *group)
+{
+	/* OID of the notification */
+	oid notification_oid[] = { VRRP_OID, 9, 0, 1 };
+	size_t notification_oid_len = OID_LENGTH(notification_oid);
+	/* OID for snmpTrapOID.0 */
+	oid objid_snmptrap[] = { SNMPTRAP_OID };
+	size_t objid_snmptrap_len = OID_LENGTH(objid_snmptrap);
+
+	/* Other OID */
+	oid name_oid[] = { VRRP_OID, 3, 1, 2 };
+	size_t name_oid_len = OID_LENGTH(name_oid);
+	oid state_oid[] = { VRRP_OID, 3, 1, 4 };
+	size_t state_oid_len = OID_LENGTH(state_oid);
+
+	netsnmp_variable_list *notification_vars = NULL;
+
+        static unsigned long state;
+
+	if (!data->enable_traps) return;
+
+	/* snmpTrapOID */
+	snmp_varlist_add_variable(&notification_vars,
+				  objid_snmptrap, objid_snmptrap_len,
+				  ASN_OBJECT_ID,
+				  (u_char *) notification_oid,
+				  notification_oid_len * sizeof(oid));
+	/* vrrpInstanceName */
+	snmp_varlist_add_variable(&notification_vars,
+				  name_oid, name_oid_len,
+				  ASN_OCTET_STR,
+				  (u_char *)group->gname,
+                                  strlen(group->gname));
+	/* vrrpInstanceState */
+	state = vrrp_snmp_state(group->state);
+	snmp_varlist_add_variable(&notification_vars,
+				  state_oid, state_oid_len,
+				  ASN_INTEGER,
+				  (u_char *)&state,
+				  sizeof(state));
+
+	log_message(LOG_INFO,
+		    "VRRP_Group(%s): Sending SNMP notification",
+		    group->gname);
+	send_v2trap(notification_vars);
+	snmp_free_varbind(notification_vars);
 }

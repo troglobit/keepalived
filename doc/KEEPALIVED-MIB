@@ -1051,6 +1051,34 @@ vrrpScriptFall OBJECT-TYPE
         "How many times the script should fail before KO."
     ::= { vrrpScriptEntry 8 }
 
+-- Traps
+
+vrrpTrap OBJECT IDENTIFIER ::= { vrrp 9 }
+vrrpTraps OBJECT IDENTIFIER ::= { vrrpTrap 0 } -- Reverse-mappable
+vrrpTrapControl OBJECT IDENTIFIER ::= { vrrpTrap 1 }
+
+vrrpSyncGroupStateChange NOTIFICATION-TYPE
+    OBJECTS {
+    	vrrpSyncGroupName,
+	vrrpSyncGroupState
+    }
+    STATUS current
+    DESCRIPTION
+	"This trap signifies that the state of the whole vrrp sync
+	group changed."
+    ::= { vrrpTraps 1 }
+
+vrrpInstanceStateChange NOTIFICATION-TYPE
+    OBJECTS {
+    	vrrpInstanceName,
+	vrrpInstanceState,
+	vrrpInstanceInitialState
+    }
+    STATUS current
+    DESCRIPTION
+	"This trap signifies that the state of a vrrp instance changed."
+    ::= { vrrpTraps 2 }
+
 -- ----------------------------------------------------------------------
 -- Healthchecker part
 -- ----------------------------------------------------------------------
@@ -1885,7 +1913,8 @@ vrrpCompliances MODULE-COMPLIANCE
     MANDATORY-GROUPS {
 	vrrpScriptGroup,
 	vrrpSyncGroup,
-	vrrpInstanceGroup
+	vrrpInstanceGroup,
+	vrrpTrapsGroup
     }
     ::= { compliances 2 }
 
@@ -1918,6 +1947,8 @@ globalGroup OBJECT-GROUP
 	"Conformance group for global data."
     ::= { groups 1 }
 
+vrrpGroups OBJECT IDENTIFIER ::= { groups 2 }
+
 vrrpSyncGroup OBJECT-GROUP
     OBJECTS {
 	vrrpSyncGroupName,
@@ -1933,7 +1964,7 @@ vrrpSyncGroup OBJECT-GROUP
     STATUS current
     DESCRIPTION
 	"Conformance group for synchronisation groups."
-    ::= { groups 2 }
+    ::= { vrrpGroups 1 }
 
 vrrpInstanceGroup OBJECT-GROUP
     OBJECTS {
@@ -1993,7 +2024,7 @@ vrrpInstanceGroup OBJECT-GROUP
     STATUS current
     DESCRIPTION
 	"Conformance group for VRRP instances."
-    ::= { groups 3 }
+    ::= { vrrpGroups 2 }
 
 vrrpScriptGroup OBJECT-GROUP
     OBJECTS {
@@ -2008,7 +2039,17 @@ vrrpScriptGroup OBJECT-GROUP
     STATUS current
     DESCRIPTION
 	"Conformance group for VRRP scripts."
-    ::= { groups 4 }
+    ::= { vrrpGroups 3 }
+
+vrrpTrapsGroup NOTIFICATION-GROUP
+    NOTIFICATIONS {
+    	vrrpSyncGroupStateChange,
+    	vrrpInstanceStateChange
+	}
+    STATUS current
+    DESCRIPTION
+	"Conformance group for VRRP traps."
+    ::= { vrrpGroups 4 }
 
 virtualServerGroupGroup OBJECT-GROUP
     OBJECTS {

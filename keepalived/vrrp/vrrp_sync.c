@@ -24,6 +24,9 @@
 #include "vrrp_if.h"
 #include "vrrp_notify.h"
 #include "vrrp_data.h"
+#ifdef _WITH_SNMP_
+#include "vrrp_snmp.h"
+#endif
 #include "logger.h"
 #include "smtp.h"
 
@@ -191,6 +194,9 @@ vrrp_sync_backup(vrrp_rt * vrrp)
 	vgroup->state = VRRP_STATE_BACK;
 	vrrp_sync_smtp_notifier(vgroup);
 	notify_group_exec(vgroup, VRRP_STATE_BACK);
+#ifdef _WITH_SNMP_
+	vrrp_snmp_group_trap(vgroup);
+#endif
 }
 
 void
@@ -221,6 +227,9 @@ vrrp_sync_master(vrrp_rt * vrrp)
 	vgroup->state = VRRP_STATE_MAST;
 	vrrp_sync_smtp_notifier(vgroup);
 	notify_group_exec(vgroup, VRRP_STATE_MAST);
+#ifdef _WITH_SNMP_
+	vrrp_snmp_group_trap(vgroup);
+#endif
 }
 
 void
@@ -256,4 +265,7 @@ vrrp_sync_fault(vrrp_rt * vrrp)
 	}
 	vgroup->state = VRRP_STATE_FAULT;
 	notify_group_exec(vgroup, VRRP_STATE_FAULT);
+#ifdef _WITH_SNMP_
+	vrrp_snmp_group_trap(vgroup);
+#endif
 }
