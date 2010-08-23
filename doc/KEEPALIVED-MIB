@@ -1,0 +1,183 @@
+-- ----------------------------------------------------------------------
+-- MIB file for keepalived (http://www.keepalived.org)
+-- ----------------------------------------------------------------------
+--
+-- There are two sections in this MIB: vrrp and check.
+
+KEEPALIVED-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    OBJECT-TYPE, MODULE-IDENTITY,
+    Integer32, Unsigned32, Counter32, Counter64,
+    Gauge32, enterprises
+        FROM SNMPv2-SMI
+    OBJECT-GROUP, MODULE-COMPLIANCE
+    	FROM SNMPv2-CONF
+    InetAddressType, InetAddress, InetPortNumber,
+    InetAddressPrefixLength, InetScopeType
+        FROM INET-ADDRESS-MIB
+    InterfaceIndex, ifIndex
+        FROM IF-MIB
+    DisplayString, TEXTUAL-CONVENTION, TruthValue
+        FROM SNMPv2-TC;
+
+keepalived MODULE-IDENTITY
+     LAST-UPDATED "200904080000Z"
+     ORGANIZATION "Keepalived"
+     CONTACT-INFO "http://www.keepalived.org"
+     DESCRIPTION
+        "This MIB describes objects used by keepalived, both
+         for VRRP and health checker."
+
+     REVISION "200904080000Z"
+     DESCRIPTION "Initial revision"
+
+     ::= { project 5 }
+
+-- We are hosted under Debian OID. See http://dsa.debian.org/iana/
+debian			OBJECT IDENTIFIER ::= { enterprises 9586 }
+project			OBJECT IDENTIFIER ::= { debian 100 }
+
+global			OBJECT IDENTIFIER ::= { keepalived 1 }
+vrrp                    OBJECT IDENTIFIER ::= { keepalived 2 }
+check                   OBJECT IDENTIFIER ::= { keepalived 3 }
+conformance		OBJECT IDENTIFIER ::= { keepalived 4 }
+
+-- ----------------------------------------------------------------------
+-- Global part
+-- ----------------------------------------------------------------------
+
+version OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+    	"Version of keepalived"
+    ::= { global 1 }
+
+routerId OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+    	"Router ID"
+    ::= { global 2 }
+
+mail	OBJECT IDENTIFIER ::= { global 3 }
+
+smtpServerAddressType OBJECT-TYPE
+    SYNTAX InetAddressType
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+    	"Address type for SMTP server."
+    ::= { mail 1 }
+
+smtpServerAddress OBJECT-TYPE
+    SYNTAX InetAddress
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+    	"Address of SMTP server."
+    ::= { mail 2 }
+
+smtpServerTimeout OBJECT-TYPE
+    SYNTAX Unsigned32
+    UNITS "seconds"
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+    	"SMTP server connection timeout."
+    ::= { mail 3 }
+
+emailFrom OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+    	"Email address for the From field."
+    ::= { mail 4 }
+
+emailTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF EmailEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+	"Table of email notification addresses."
+    ::= { mail 5 }
+
+emailEntry OBJECT-TYPE
+    SYNTAX EmailEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+	"Email address to be notified with an alert."
+    INDEX { emailIndex }
+    ::= { emailTable 1 }
+
+EmailEntry ::= SEQUENCE {
+	emailIndex Integer32,
+	emailAddress DisplayString
+}
+
+emailIndex OBJECT-TYPE
+    SYNTAX Integer32 (1..2147483647)
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+	"Index for the email address."
+    ::= { emailEntry 1 }
+
+emailAddress OBJECT-TYPE
+    SYNTAX DisplayString
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Email address to be notified when an alert is raised."
+    ::= { emailEntry 2 }
+
+linkBeat OBJECT-TYPE
+    SYNTAX INTEGER { netlink(1), polling(2) }
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Indicate which method is used to check if a link is up or
+	down. netlink(1) means that the kernel will push a link state
+	change while polling(2) means that the status of the link is
+	checked periodically."
+    ::= { global 5 }
+
+-- ----------------------------------------------------------------------
+-- Conformance
+-- ----------------------------------------------------------------------
+
+compliances  OBJECT IDENTIFIER ::= { conformance 1 }
+groups	     OBJECT IDENTIFIER ::= { conformance 2 }
+
+globalCompliances MODULE-COMPLIANCE
+    STATUS current
+    DESCRIPTION
+	"Compliance statement for global data"
+    MODULE -- this module
+    MANDATORY-GROUPS {
+    	globalGroup
+    }
+    ::= { compliances 1 }
+
+globalGroup OBJECT-GROUP
+    OBJECTS {
+    	version,
+	routerId,
+	smtpServerAddressType,
+	smtpServerAddress,
+	smtpServerTimeout,
+	emailFrom,
+	emailAddress,
+	linkBeat
+    }
+    STATUS current
+    DESCRIPTION
+	"Conformance group for global data."
+    ::= { groups 1 }
+
+END
