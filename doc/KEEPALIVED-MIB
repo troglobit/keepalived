@@ -1887,6 +1887,49 @@ realServerRateOutBPS OBJECT-TYPE
 	"Current outgoing rate for this real server."
     ::= { realServerEntry 26 }
 
+-- Traps
+
+checkTrap OBJECT IDENTIFIER ::= { check 5 }
+checkTraps OBJECT IDENTIFIER ::= { checkTrap 0 } -- Reverse-mappable
+checkTrapControl OBJECT IDENTIFIER ::= { checkTrap 1 }
+
+realServerStateChange NOTIFICATION-TYPE
+    OBJECTS {
+    	realServerAddrType,
+	realServerAddress,
+	realServerPort,
+	realServerStatus,
+	virtualServerType,
+	virtualServerProtocol,
+	virtualServerRealServersUp,
+	virtualServerRealServersTotal
+    }
+    STATUS current
+    DESCRIPTION
+	"This trap signifies that the state of a real server has
+	changed. Additional varbinds will be added depending on the
+	value of virtualServerType: virtualServerNameOfGroup,
+	virtualServerFwMark, virtualServerAddrType,
+	virtualServerAddress, virtualServerPort."
+    ::= { checkTraps 1 }
+
+virtualServerQuorumStateChange NOTIFICATION-TYPE
+    OBJECTS {
+	virtualServerType,
+	virtualServerProtocol,
+	virtualServerQuorumStatus,
+	virtualServerQuorum,
+	virtualServerRealServersUp,
+	virtualServerRealServersTotal
+    }
+    STATUS current
+    DESCRIPTION
+	"This trap signifies that the quorum of a virtual server has
+	changed. Additional varbinds will be added depending on the
+	value of virtualServerType: virtualServerNameOfGroup,
+	virtualServerFwMark, virtualServerAddrType,
+	virtualServerAddress, virtualServerPort."
+    ::= { checkTraps 2 }
 
 -- ----------------------------------------------------------------------
 -- Conformance
@@ -1926,7 +1969,8 @@ checkCompliances MODULE-COMPLIANCE
     MANDATORY-GROUPS {
 	virtualServerGroupGroup,
 	virtualServerGroup,
-	realServerGroup
+	realServerGroup,
+	checkTrapsGroup
     }
     ::= { compliances 3 }
 
@@ -2051,6 +2095,8 @@ vrrpTrapsGroup NOTIFICATION-GROUP
 	"Conformance group for VRRP traps."
     ::= { vrrpGroups 4 }
 
+checkGroups OBJECT IDENTIFIER ::= { groups 3 }
+
 virtualServerGroupGroup OBJECT-GROUP
     OBJECTS {
 	virtualServerGroupName,
@@ -2065,7 +2111,7 @@ virtualServerGroupGroup OBJECT-GROUP
     STATUS current
     DESCRIPTION
 	"Conformance group for virtual server groups."
-    ::= { groups 5 }
+    ::= { checkGroups 1 }
 
 virtualServerGroup OBJECT-GROUP
     OBJECTS {
@@ -2108,7 +2154,7 @@ virtualServerGroup OBJECT-GROUP
     STATUS current
     DESCRIPTION
 	"Conformance group for virtual servers."
-    ::= { groups 6 }
+    ::= { checkGroups 2 }
 
 realServerGroup OBJECT-GROUP
     OBJECTS {
@@ -2141,6 +2187,16 @@ realServerGroup OBJECT-GROUP
     STATUS current
     DESCRIPTION
 	"Conformance group for real servers."
-    ::= { groups 7 }
+    ::= { checkGroups 3 }
+
+checkTrapsGroup NOTIFICATION-GROUP
+    NOTIFICATIONS {
+    	realServerStateChange,
+    	virtualServerQuorumStateChange
+	}
+    STATUS current
+    DESCRIPTION
+	"Conformance group for check traps."
+    ::= { checkGroups 4 }
 
 END
