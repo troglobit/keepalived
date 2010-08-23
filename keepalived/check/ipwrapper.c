@@ -27,6 +27,9 @@
 #include "utils.h"
 #include "notify.h"
 #include "main.h"
+#ifdef _WITH_SNMP_
+#include "check_snmp.h"
+#endif
 
 /* Returns the sum of all RS weight in a virtual server. */
 long unsigned
@@ -73,19 +76,27 @@ clear_service_rs(list vs_group, virtual_server * vs, list l)
 						    , ntohs(inet_sockaddrport(&vs->addr)));
 				notify_exec(rs->notify_down);
 			}
+#ifdef _WITH_SNMP_
+			check_snmp_rs_trap(rs, vs);
+#endif
 
 			/* Sooner or later VS will lose the quorum (if any). However,
 			 * we don't push in a sorry server then, hence the regression
 			 * is intended.
 			 */
-			if (vs->quorum_state == UP && vs->quorum_down &&
-			    weigh_live_realservers(vs) < vs->quorum - vs->hysteresis) {
+			if (vs->quorum_state == UP
+			  && weigh_live_realservers(vs) < vs->quorum - vs->hysteresis) {
 				vs->quorum_state = DOWN;
-				log_message(LOG_INFO, "Executing [%s] for VS [%s]:%d"
+				if (vs->quorum_down) {
+					log_message(LOG_INFO, "Executing [%s] for VS [%s]:%d"
 						    , vs->quorum_down
 						    , (vs->vsgname) ? vs->vsgname : inet_sockaddrtos(&vs->addr)
 						    , ntohs(inet_sockaddrport(&vs->addr)));
-				notify_exec(vs->quorum_down);
+					notify_exec(vs->quorum_down);
+				}
+#ifdef _WITH_SNMP_
+				check_snmp_quorum_trap(vs);
+#endif
 			}
 		}
 	}
@@ -266,6 +277,9 @@ update_quorum_state(virtual_server * vs)
 					    , ntohs(inet_sockaddrport(&vs->addr)));
 			notify_exec(vs->quorum_up);
 		}
+#ifdef _WITH_SNMP_
+		check_snmp_quorum_trap(vs);
+#endif
 		return;
 	}
 
@@ -303,6 +317,9 @@ update_quorum_state(virtual_server * vs)
 			/* Remove remaining alive real servers */
 			perform_quorum_state(vs, 0);
 		}
+#ifdef _WITH_SNMP_
+		check_snmp_quorum_trap(vs);
+#endif
 		return;
 	}
 }
@@ -341,6 +358,9 @@ perform_svr_state(int alive, virtual_server * vs, real_server * rs)
 					    , ntohs(inet_sockaddrport(&vs->addr)));
 			notify_exec(rs->notify_up);
 		}
+#ifdef _WITH_SNMP_
+		check_snmp_rs_trap(rs, vs);
+#endif
 
 		/* We may have gained quorum */
 		update_quorum_state(vs);
@@ -370,6 +390,9 @@ perform_svr_state(int alive, virtual_server * vs, real_server * rs)
 					    , ntohs(inet_sockaddrport(&vs->addr)));
 			notify_exec(rs->notify_down);
 		}
+#ifdef _WITH_SNMP_
+		check_snmp_rs_trap(rs, vs);
+#endif
 
 		/* We may have lost quorum */
 		update_quorum_state(vs);
