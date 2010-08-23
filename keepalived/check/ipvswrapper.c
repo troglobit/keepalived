@@ -624,6 +624,187 @@ ipvs_group_remove_entry(virtual_server *vs, virtual_server_group_entry *vsge)
 	return IPVS_SUCCESS;
 }
 
+#ifdef _WITH_SNMP_
+/* Update statistics for a given virtual server. This includes
+   statistics of real servers. The update is only done if we need
+   refreshing. */
+void
+ipvs_update_stats(virtual_server *vs)
+{
+	element e, ge = NULL;
+	real_server *rs;
+	virtual_server_group *vsg = NULL;
+	virtual_server_group_entry *vsg_entry = NULL;
+	uint32_t addr_ip = 0;
+	ipvs_service_entry_t * serv = NULL;
+	struct ip_vs_get_dests * dests = NULL;
+	int i;
+#define UPDATE_STATS_INIT 1
+#define UPDATE_STATS_VSG_IP 2
+#define UPDATE_STATS_VSG_FWMARK 4
+#define UPDATE_STATS_VSG_RANGE 6
+#define UPDATE_STATS_VSG_RANGE_IP 7
+#define UPDATE_STATS_END 99
+	int state = UPDATE_STATS_INIT;
+
+	if (time(NULL) - vs->lastupdated < STATS_REFRESH)
+		return;
+	vs->lastupdated = time(NULL);
+	/* Reset stats */
+	memset(&vs->stats, 0, sizeof(vs->stats));
+	if (vs->s_svr) {
+		memset(&vs->s_svr->stats, 0, sizeof(vs->s_svr->stats));
+		vs->s_svr->activeconns =
+			vs->s_svr->inactconns = vs->s_svr->persistconns = 0;
+	}
+	if (!LIST_ISEMPTY(vs->rs)) {
+		for (e = LIST_HEAD(vs->rs); e; ELEMENT_NEXT(e)) {
+			rs = ELEMENT_DATA(e);
+			memset(&rs->stats, 0, sizeof(rs->stats));
+			rs->activeconns = rs->inactconns = rs->persistconns = 0;
+		}
+	}
+	/* FSM: at each transition, we process "serv" if it is not NULL */
+	while (state != UPDATE_STATS_END) {
+		serv = NULL;
+		switch (state) {
+		case UPDATE_STATS_INIT:
+			/* We need to know the next state to reach */
+			if (vs->vsgname) {
+				if (!LIST_ISEMPTY(check_data->vs_group))
+					vsg = ipvs_get_group_by_name(vs->vsgname,
+								     check_data->vs_group);
+				else
+					vsg = NULL;
+				if (!vsg)
+					state = UPDATE_STATS_END;
+				else {
+					state = UPDATE_STATS_VSG_IP;
+					ge = NULL;
+				}
+				continue;
+			} else
+				state = UPDATE_STATS_END;
+				serv = ipvs_get_service(vs->vfwmark,
+							vs->service_type,
+							SVR_IP(vs),
+							SVR_PORT(vs));
+			break;
+		case UPDATE_STATS_VSG_IP:
+			if (!ge)
+				ge = LIST_HEAD(vsg->addr_ip);
+			else
+				ELEMENT_NEXT(ge);
+			if (!ge) {
+				state = UPDATE_STATS_VSG_FWMARK;
+				continue;
+			}
+			vsg_entry = ELEMENT_DATA(ge);
+			serv = ipvs_get_service(0, vs->service_type,
+						SVR_IP(vsg_entry),
+						SVR_PORT(vsg_entry));
+			break;
+		case UPDATE_STATS_VSG_FWMARK:
+			if (!ge)
+				ge = LIST_HEAD(vsg->vfwmark);
+			else
+				ELEMENT_NEXT(ge);
+			if (!ge) {
+				state = UPDATE_STATS_VSG_RANGE;
+				continue;
+			}
+			vsg_entry = ELEMENT_DATA(ge);
+			serv = ipvs_get_service(vsg_entry->vfwmark,
+						vs->service_type,
+						0, 0);
+			break;
+		case UPDATE_STATS_VSG_RANGE:
+			if (!ge)
+				ge = LIST_HEAD(vsg->range);
+			else
+				ELEMENT_NEXT(ge);
+			if (!ge) {
+				state = UPDATE_STATS_END;
+				continue;
+			}
+			vsg_entry = ELEMENT_DATA(ge);
+			addr_ip = SVR_IP(vsg_entry);
+			state = UPDATE_STATS_VSG_RANGE_IP;
+			continue;
+		case UPDATE_STATS_VSG_RANGE_IP:
+			if (((addr_ip >> 24) & 0xFF) > vsg_entry->range) {
+				state = UPDATE_STATS_VSG_RANGE;
+				continue;
+			}
+			serv = ipvs_get_service(0,
+						vs->service_type,
+						addr_ip, SVR_PORT(vsg_entry));
+			addr_ip += 0x01000000;
+			break;
+		}
+		if (!serv) continue;
+		
+		/* Update virtual server stats */
+#define ADD_TO_VSSTATS(X) vs->stats.X += serv->stats.X;
+		ADD_TO_VSSTATS(conns);
+		ADD_TO_VSSTATS(inpkts);
+		ADD_TO_VSSTATS(outpkts);
+		ADD_TO_VSSTATS(inbytes);
+		ADD_TO_VSSTATS(outbytes);
+		ADD_TO_VSSTATS(cps);
+		ADD_TO_VSSTATS(inpps);
+		ADD_TO_VSSTATS(outpps);
+		ADD_TO_VSSTATS(inbps);
+		ADD_TO_VSSTATS(outbps);
+
+		/* Get real servers */
+		dests = ipvs_get_dests(serv);
+		if (!dests) {
+			FREE(serv);
+			return;
+		}
+		for (i = 0; i < dests->num_dests; i++) {
+			rs = NULL;
+			/* Is it the sorry server? */
+			if (vs->s_svr &&
+			    (ntohl(dests->entrytable[i].addr) ==
+			     ntohl(vs->s_svr->addr_ip)) &&
+			    (ntohs(vs->s_svr->addr_port) ==
+			     ntohs(dests->entrytable[i].port)))
+				rs = vs->s_svr;
+			else if (!LIST_ISEMPTY(vs->rs))
+				/* Search for a match in the list of real servers */
+				for (e = LIST_HEAD(vs->rs); e; ELEMENT_NEXT(e)) {
+					rs = ELEMENT_DATA(e);
+					if ((ntohl(dests->entrytable[i].addr) ==
+					     ntohl(rs->addr_ip)) &&
+					    (ntohs(rs->addr_port) ==
+					     ntohs(dests->entrytable[i].port)))
+						break;
+				}
+			if (rs) {
+#define ADD_TO_RSSTATS(X) rs->X += dests->entrytable[i].X
+				ADD_TO_RSSTATS(activeconns);
+				ADD_TO_RSSTATS(inactconns);
+				ADD_TO_RSSTATS(persistconns);
+				ADD_TO_RSSTATS(stats.conns);
+				ADD_TO_RSSTATS(stats.inpkts);
+				ADD_TO_RSSTATS(stats.outpkts);
+				ADD_TO_RSSTATS(stats.inbytes);
+				ADD_TO_RSSTATS(stats.outbytes);
+				ADD_TO_RSSTATS(stats.cps);
+				ADD_TO_RSSTATS(stats.inpps);
+				ADD_TO_RSSTATS(stats.outpps);
+				ADD_TO_RSSTATS(stats.inbps);
+				ADD_TO_RSSTATS(stats.outbps);
+			}
+		}
+		FREE(dests);
+		FREE(serv);
+	}
+}
+
+#endif /* _WITH_SNMP_ */
 #endif
 
 /*

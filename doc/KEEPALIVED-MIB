@@ -1243,7 +1243,17 @@ VirtualServerEntry ::= SEQUENCE {
 	virtualServerQuorumStatus INTEGER,
 	virtualServerQuorumUp DisplayString,
 	virtualServerQuorumDown DisplayString,
-	virtualServerHysteresis Unsigned32
+	virtualServerHysteresis Unsigned32,
+	virtualServerStatsConns Gauge32,
+	virtualServerStatsInPkts Counter32,
+	virtualServerStatsOutPkts Counter32,
+	virtualServerStatsInBytes Counter64,
+	virtualServerStatsOutBytes Counter64,
+	virtualServerRateCps Gauge32,
+	virtualServerRateInPPS Gauge32,
+	virtualServerRateOutPPS Gauge32,
+	virtualServerRateInBPS Gauge32,
+	virtualServerRateOutBPS Gauge32
 }
 
 virtualServerIndex OBJECT-TYPE
@@ -1480,6 +1490,97 @@ virtualServerHysteresis OBJECT-TYPE
 	"Hysteresis with respect to quorum count."
     ::= { virtualServerEntry 26 }
 
+virtualServerStatsConns OBJECT-TYPE
+    SYNTAX Gauge32
+    UNITS "connections"
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Total number of connections scheduled for this virtual server."
+    ::= { virtualServerEntry 27 }
+
+virtualServerStatsInPkts OBJECT-TYPE
+    SYNTAX Counter32
+    UNITS "packets"
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Total number of incoming packets for this virtual server."
+    ::= { virtualServerEntry 28 }
+
+virtualServerStatsOutPkts OBJECT-TYPE
+    SYNTAX Counter32
+    UNITS "packets"
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Total number of outgoing packets for this virtual server."
+    ::= { virtualServerEntry 29 }
+
+virtualServerStatsInBytes OBJECT-TYPE
+    SYNTAX Counter64
+    UNITS "bytes"
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Total number of incoming bytes for this virtual server."
+    ::= { virtualServerEntry 30 }
+
+virtualServerStatsOutBytes OBJECT-TYPE
+    SYNTAX Counter64
+    UNITS "bytes"
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Total number of outgoing bytes for this virtual server."
+    ::= { virtualServerEntry 31 }
+
+virtualServerRateCps OBJECT-TYPE
+    SYNTAX Gauge32
+    UNITS "connections/s"
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Current connection rate for this virtual server."
+    ::= { virtualServerEntry 32 }
+
+virtualServerRateInPPS OBJECT-TYPE
+    SYNTAX Gauge32
+    UNITS "packets/s"
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Current in packet rate for this virtual server."
+    ::= { virtualServerEntry 33 }
+
+virtualServerRateOutPPS OBJECT-TYPE
+    SYNTAX Gauge32
+    UNITS "packets/s"
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Current out packet rate for this virtual server."
+    ::= { virtualServerEntry 34 }
+
+virtualServerRateInBPS OBJECT-TYPE
+    SYNTAX Gauge32
+    UNITS "bytes/s"
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Current incoming rate for this virtual server."
+    ::= { virtualServerEntry 35 }
+
+virtualServerRateOutBPS OBJECT-TYPE
+    SYNTAX Gauge32
+    UNITS "bytes/s"
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Current outgoing rate for this virtual server."
+    ::= { virtualServerEntry 36 }
+
+
 -- real servers
 
 realServerTable OBJECT-TYPE
@@ -1512,7 +1613,20 @@ RealServerEntry ::= SEQUENCE {
 	realServerActionWhenDown INTEGER,
 	realServerNotifyUp DisplayString,
 	realServerNotifyDown DisplayString,
-	realServerFailedChecks Unsigned32
+	realServerFailedChecks Unsigned32,
+	realServerStatsConns Gauge32,
+	realServerStatsActiveConns Gauge32,
+	realServerStatsInactiveConns Gauge32,
+	realServerStatsPersistentConns Gauge32,
+	realServerStatsInPkts Counter32,
+	realServerStatsOutPkts Counter32,
+	realServerStatsInBytes Counter64,
+	realServerStatsOutBytes Counter64,
+	realServerRateCps Gauge32,
+	realServerRateInPPS Gauge32,
+	realServerRateOutPPS Gauge32,
+	realServerRateInBPS Gauge32,
+	realServerRateOutBPS Gauge32
 }
 
 realServerIndex OBJECT-TYPE
@@ -1619,6 +1733,124 @@ realServerFailedChecks OBJECT-TYPE
     DESCRIPTION
 	"How many failed checks for this real server."
     ::= { realServerEntry 13 }
+
+realServerStatsConns OBJECT-TYPE
+    SYNTAX Gauge32
+    UNITS "connections"
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Total number of connections scheduled for this real server."
+    ::= { realServerEntry 14 }
+
+realServerStatsActiveConns OBJECT-TYPE
+    SYNTAX Gauge32
+    UNITS "connections"
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Current active connections for this real server."
+    ::= { realServerEntry 15 }
+
+realServerStatsInactiveConns OBJECT-TYPE
+    SYNTAX Gauge32
+    UNITS "connections"
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Current inactive connections for this real server."
+    ::= { realServerEntry 16 }
+
+realServerStatsPersistentConns OBJECT-TYPE
+    SYNTAX Gauge32
+    UNITS "connections"
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Current persistent connections for this real server."
+    ::= { realServerEntry 17 }
+
+realServerStatsInPkts OBJECT-TYPE
+    SYNTAX Counter32
+    UNITS "packets"
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Total number of incoming packets for this real server."
+    ::= { realServerEntry 18 }
+
+realServerStatsOutPkts OBJECT-TYPE
+    SYNTAX Counter32
+    UNITS "packets"
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Total number of outgoing packets for this real server."
+    ::= { realServerEntry 19 }
+
+realServerStatsInBytes OBJECT-TYPE
+    SYNTAX Counter64
+    UNITS "bytes"
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Total number of incoming bytes for this real server."
+    ::= { realServerEntry 20 }
+
+realServerStatsOutBytes OBJECT-TYPE
+    SYNTAX Counter64
+    UNITS "bytes"
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Total number of outgoing bytes for this real server."
+    ::= { realServerEntry 21 }
+
+realServerRateCps OBJECT-TYPE
+    SYNTAX Gauge32
+    UNITS "connections/s"
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Current connection rate for this real server."
+    ::= { realServerEntry 22 }
+
+realServerRateInPPS OBJECT-TYPE
+    SYNTAX Gauge32
+    UNITS "packets/s"
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Current in packet rate for this real server."
+    ::= { realServerEntry 23 }
+
+realServerRateOutPPS OBJECT-TYPE
+    SYNTAX Gauge32
+    UNITS "packets/s"
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Current out packet rate for this real server."
+    ::= { realServerEntry 24 }
+
+realServerRateInBPS OBJECT-TYPE
+    SYNTAX Gauge32
+    UNITS "bytes/s"
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Current incoming rate for this real server."
+    ::= { realServerEntry 25 }
+
+realServerRateOutBPS OBJECT-TYPE
+    SYNTAX Gauge32
+    UNITS "bytes/s"
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Current outgoing rate for this real server."
+    ::= { realServerEntry 26 }
+
 
 -- ----------------------------------------------------------------------
 -- Conformance
@@ -1811,7 +2043,17 @@ virtualServerGroup OBJECT-GROUP
 	virtualServerQuorumStatus,
 	virtualServerQuorumUp,
 	virtualServerQuorumDown,
-	virtualServerHysteresis
+	virtualServerHysteresis,
+	virtualServerStatsConns,
+	virtualServerStatsInPkts,
+	virtualServerStatsOutPkts,
+	virtualServerStatsInBytes,
+	virtualServerStatsOutBytes,
+	virtualServerRateCps,
+	virtualServerRateInPPS,
+	virtualServerRateOutPPS,
+	virtualServerRateInBPS,
+	virtualServerRateOutBPS
 	}
     STATUS current
     DESCRIPTION
@@ -1831,7 +2073,20 @@ realServerGroup OBJECT-GROUP
 	realServerActionWhenDown,
 	realServerNotifyUp,
 	realServerNotifyDown,
-	realServerFailedChecks
+	realServerFailedChecks,
+	realServerStatsConns,
+	realServerStatsActiveConns,
+	realServerStatsInactiveConns,
+	realServerStatsPersistentConns,
+	realServerStatsInPkts,
+	realServerStatsOutPkts,
+	realServerStatsInBytes,
+	realServerStatsOutBytes,
+	realServerRateCps,
+	realServerRateInPPS,
+	realServerRateOutPPS,
+	realServerRateInBPS,
+	realServerRateOutBPS
 	}
     STATUS current
     DESCRIPTION
