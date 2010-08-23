@@ -37,7 +37,9 @@
 #include "list.h"
 #include "utils.h"
 
-#define GLOBAL_OID {1, 3, 6, 1, 4, 1, 9586, 100, 5, 1}
+#define KEEPALIVED_OID 1, 3, 6, 1, 4, 1, 9586, 100, 5
+#define SNMPTRAP_OID 1, 3, 6, 1, 6, 3, 1, 1, 4, 1, 0
+#define GLOBAL_OID {KEEPALIVED_OID, 1}
 
 /* For net-snmp */
 extern int register_sysORTable(oid *, size_t, const char *);
