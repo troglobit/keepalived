@@ -94,6 +94,7 @@ snmp_header_list_table(struct variable *vp, oid *name, size_t *length,
 #define SNMP_MAIL_SMTPSERVERTIMEOUT 5
 #define SNMP_MAIL_EMAILFROM 6
 #define SNMP_MAIL_EMAILADDRESS 7
+#define SNMP_TRAPS 8
 #define SNMP_LINKBEAT 9
 
 static u_char*
@@ -124,6 +125,9 @@ snmp_scalar(struct variable *vp, oid *name, size_t *length,
 	case SNMP_MAIL_EMAILFROM:
 		*var_len = strlen(data->email_from);
 		return (u_char *)data->email_from;
+	case SNMP_TRAPS:
+		long_ret = data->enable_traps?1:2;
+		return (u_char *)&long_ret;
 	case SNMP_LINKBEAT:
 		long_ret = data->linkbeat_use_polling?2:1;
 		return (u_char *)&long_ret;
@@ -166,6 +170,8 @@ static struct variable8 global_vars[] = {
 	{SNMP_MAIL_EMAILFROM, ASN_OCTET_STR, RONLY, snmp_scalar, 2, {3, 4}},
 	/* emailTable */
 	{SNMP_MAIL_EMAILADDRESS, ASN_OCTET_STR, RONLY, snmp_mail, 4, {3, 5, 1, 2}},
+	/* trapEnable */
+	{SNMP_TRAPS, ASN_INTEGER, RONLY, snmp_scalar, 1, {4}},
 	/* linkBeat */
 	{SNMP_LINKBEAT, ASN_INTEGER, RONLY, snmp_scalar, 1, {5}},
 };

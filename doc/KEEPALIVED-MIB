@@ -9,9 +9,9 @@ KEEPALIVED-MIB DEFINITIONS ::= BEGIN
 IMPORTS
     OBJECT-TYPE, MODULE-IDENTITY,
     Integer32, Unsigned32, Counter32, Counter64,
-    Gauge32, enterprises
+    Gauge32, enterprises, NOTIFICATION-TYPE
         FROM SNMPv2-SMI
-    OBJECT-GROUP, MODULE-COMPLIANCE
+    OBJECT-GROUP, MODULE-COMPLIANCE, NOTIFICATION-GROUP
     	FROM SNMPv2-CONF
     InetAddressType, InetAddress, InetPortNumber,
     InetAddressPrefixLength, InetScopeType
@@ -147,6 +147,14 @@ emailAddress OBJECT-TYPE
     DESCRIPTION
 	"Email address to be notified when an alert is raised."
     ::= { emailEntry 2 }
+
+trapEnable OBJECT-TYPE
+    SYNTAX INTEGER { enabled(1), disabled(2) }
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"Indicate whether traps should be sent for various events."
+    ::= { global 4 }
 
 linkBeat OBJECT-TYPE
     SYNTAX INTEGER { netlink(1), polling(2) }
@@ -1902,6 +1910,7 @@ globalGroup OBJECT-GROUP
 	smtpServerTimeout,
 	emailFrom,
 	emailAddress,
+	trapEnable,
 	linkBeat
     }
     STATUS current
