@@ -217,7 +217,7 @@ check_respawn_thread(thread * thread_obj)
 	}
 
 	/* We catch a SIGCHLD, handle it */
-	log_message(LOG_INFO, "Healthcheck child process(%d) died: Respawning", pid);
+	log_message(LOG_ALERT, "Healthcheck child process(%d) died: Respawning", pid);
 	start_check_child();
 	return 0;
 }
