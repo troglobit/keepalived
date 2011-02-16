@@ -127,7 +127,7 @@ register_checkers_thread(void)
 	for (e = LIST_HEAD(checkers_queue); e; ELEMENT_NEXT(e)) {
 		checker_obj = ELEMENT_DATA(e);
 		log_message(LOG_INFO,
-		       "Activating healtchecker for service [%s:%d]",
+		       "Activating healthchecker for service [%s:%d]",
 		       inet_ntop2(CHECKER_RIP(checker_obj)),
 		       ntohs(CHECKER_RPORT(checker_obj)));
 		CHECKER_ENABLE(checker_obj);
@@ -156,12 +156,12 @@ update_checker_activity(uint32_t address, int enable)
 			if (CHECKER_VIP(checker_obj) == address && CHECKER_HA_SUSPEND(checker_obj)) {
 				if (!CHECKER_ENABLED(checker_obj) && enable)
 					log_message(LOG_INFO,
-					       "Activating healtchecker for service [%s:%d]",
+					       "Activating healthchecker for service [%s:%d]",
 					       inet_ntop2(CHECKER_RIP(checker_obj)),
 					       ntohs(CHECKER_RPORT(checker_obj)));
 				if (CHECKER_ENABLED(checker_obj) && !enable)
 					log_message(LOG_INFO,
-					       "Suspending healtchecker for service [%s:%d]",
+					       "Suspending healthchecker for service [%s:%d]",
 					       inet_ntop2(CHECKER_RIP(checker_obj)),
 					       ntohs(CHECKER_RPORT(checker_obj)));
 				checker_obj->enabled = enable;
