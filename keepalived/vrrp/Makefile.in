@@ -4,17 +4,22 @@
 #
 # Copyright (C) 2001-2011 Alexandre Cassen, <acassen@linux-vs.org>
 
+SNMP_FLAG = @SNMP_SUPPORT@
+
 CC	 = @CC@
 INCLUDES = -I../include -I../../lib
 CFLAGS	 = @CFLAGS@ @CPPFLAGS@ $(INCLUDES) \
 	   -Wall -Wunused -Wstrict-prototypes
-DEFS	 = -D@KERN@ -D@IPVS_SUPPORT@ -D@IPVS_SYNCD@ @DFLAGS@
+DEFS	 = -D@KERN@ -D@IPVS_SUPPORT@ -D@IPVS_SYNCD@ -D@SNMP_SUPPORT@ @DFLAGS@
 COMPILE	 = $(CC) $(CFLAGS) $(DEFS)
 
 OBJS = 	vrrp_daemon.o vrrp_data.o vrrp_parser.o \
 	vrrp.o vrrp_notify.o vrrp_scheduler.o vrrp_sync.o vrrp_index.o \
 	vrrp_netlink.o vrrp_arp.o vrrp_if.o vrrp_track.o vrrp_ipaddress.o \
 	vrrp_iproute.o vrrp_ipsecah.o vrrp_ndisc.o
+ifeq ($(SNMP_FLAG),_WITH_SNMP_)
+  OBJS += vrrp_snmp.o
+endif
 HEADERS = $(OBJS:.o=.h)
 
 .c.o:
@@ -33,7 +38,7 @@ vrrp_daemon.o: vrrp_daemon.c ../include/vrrp_daemon.h ../include/vrrp_scheduler.
   ../include/vrrp_iproute.h ../include/vrrp_parser.h ../include/vrrp_data.h \
   ../include/vrrp.h ../include/global_data.h ../include/pidfile.h ../include/daemon.h \
   ../include/ipvswrapper.h ../../lib/list.h ../../lib/memory.h ../../lib/parser.h \
-  ../../lib/signals.h
+  ../../lib/signals.h ../include/snmp.h ../include/vrrp_snmp.h
 vrrp_data.o: vrrp_data.c ../include/vrrp_data.h \
   ../include/vrrp_sync.h ../include/vrrp_if.h ../include/vrrp_index.h \
   ../include/vrrp.h ../../lib/memory.h ../../lib/utils.h ../../lib/notify.h
@@ -72,3 +77,6 @@ vrrp_iproute.o: vrrp_iproute.c ../include/vrrp_iproute.h ../include/vrrp_netlink
 vrrp_ipsecah.o: vrrp_ipsecah.c ../include/vrrp_ipsecah.h
 vrrp_ndisc.o: vrrp_ndisc.c ../include/vrrp_ndisc.h ../include/vrrp_ipaddress.h \
   ../../lib/utils.h ../../lib/memory.h
+vrrp_snmp.o: vrrp_snmp.c ../include/vrrp_snmp.h ../include/vrrp_track.h \
+  ../include/vrrp_data.h ../include/vrrp_ipaddress.h ../include/vrrp_iproute.h \
+  ../include/vrrp.h ../../lib/vector.h ../../lib/list.h ../include/snmp.h 
