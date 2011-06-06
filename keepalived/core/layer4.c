@@ -138,7 +138,7 @@ tcp_socket_state(int fd, thread * thread_obj, uint32_t addr_ip, uint16_t addr_po
 	return connect_success;
 }
 
-void
+int
 tcp_connection_state(int fd, enum connect_result status, thread * thread_obj,
 		     int (*func) (struct _thread *)
 		     , long timeout)
@@ -148,19 +148,12 @@ tcp_connection_state(int fd, enum connect_result status, thread * thread_obj,
 	checker_obj = THREAD_ARG(thread_obj);
 
 	switch (status) {
-	case connect_error:
-		DBG("TCP connection ERROR to [%s:%d].",
-		    inet_ntop2(SVR_IP(checker_obj->rs)),
-		    ntohs(SVR_PORT(checker_obj->rs)));
-		close(fd);
-		break;
-
 	case connect_success:
 		DBG("TCP connection SUCCESS to [%s:%d].",
 		    inet_ntop2(SVR_IP(checker_obj->rs)),
 		    ntohs(SVR_PORT(checker_obj->rs)));
 		thread_add_write(thread_obj->master, func, checker_obj, fd, timeout);
-		break;
+		return 0;
 
 		/* Checking non-blocking connect, we wait until socket is writable */
 	case connect_in_progress:
@@ -168,9 +161,12 @@ tcp_connection_state(int fd, enum connect_result status, thread * thread_obj,
 		    inet_ntop2(SVR_IP(checker_obj->rs)),
 		    ntohs(SVR_PORT(checker_obj->rs)));
 		thread_add_write(thread_obj->master, func, checker_obj, fd, timeout);
-		break;
+		return 0;
 
 	default:
-		break;
+		DBG("TCP connection bad status [%d] to [%s:%d].", (int)status,
+		    inet_ntop2(SVR_IP(checker_obj->rs)),
+		    ntohs(SVR_PORT(checker_obj->rs)));
+		return 1;
 	}
 }

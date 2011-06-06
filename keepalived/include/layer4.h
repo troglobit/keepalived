@@ -53,7 +53,7 @@ extern enum connect_result
  tcp_socket_state(int, thread *, uint32_t, uint16_t,
 		  int (*func) (struct _thread *));
 
-extern void
+extern int
  tcp_connection_state(int, enum connect_result
 		      , thread *, int (*func) (struct _thread *)
 		      , long);

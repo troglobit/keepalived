@@ -176,7 +176,9 @@ tcp_connect_thread(thread * thread_obj)
 	}
 
 	if ((fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1) {
-		DBG("TCP connect fail to create socket.");
+		log_message(LOG_INFO, "TCP connect fail to create socket. Rescheduling.");
+		thread_add_timer(thread_obj->master, tcp_connect_thread, checker_obj,
+				 checker_obj->vs->delay_loop);
 		return 0;
 	}
 
@@ -187,7 +189,12 @@ tcp_connect_thread(thread * thread_obj)
 				  , tcp_check->bindto);
 
 	/* handle tcp connection status & register check worker thread */
-	tcp_connection_state(fd, status, thread_obj, tcp_check_thread,
-			     tcp_check->connection_to);
+	if(tcp_connection_state(fd, status, thread_obj, tcp_check_thread,
+			     tcp_check->connection_to)) {
+		close(fd);
+		log_message(LOG_INFO, "TCP socket bind failed. Rescheduling.");
+		thread_add_timer(thread_obj->master, tcp_connect_thread, checker_obj,
+				checker_obj->vs->delay_loop);
+	}
 	return 0;
 }
